@@ -539,7 +539,7 @@ function addChest(l){
 }
 LOCS.forEach(addChest);
 
-// Стражники (NPC) у мостов
+// Стражники (NPC) — гарантированный спавн и квест
 const guards=[];
 LOCS.forEach((l,i)=>{
   const r=locRadius(l.id);
@@ -547,9 +547,11 @@ LOCS.forEach((l,i)=>{
   const dx=next.cx-l.cx,dz=next.cz-l.cz;
   const len=Math.sqrt(dx*dx+dz*dz);
   const ux=dx/len,uz=dz/len;
-  const gx=Math.round(l.cx+ux*(r-1.5));
-  const gz=Math.round(l.cz+uz*(r-1.5));
-  const top=groundTop(gx,gz)??BASE;
+  // Безопасная точка: не на самом краю
+  let gx=Math.round(l.cx+ux*(r-3));
+  let gz=Math.round(l.cz+uz*(r-3));
+  let top=groundTop(gx,gz);
+  if(top==null){gx=l.cx;gz=l.cz;top=groundTop(gx,gz)??BASE;}
   const g=new pc.Entity('guard_'+i);
   const body=new pc.Entity();body.addComponent('render',{type:'box',material:mat(l.npc.color)});body.setLocalPosition(0,0.75,0);body.setLocalScale(0.55,0.9,0.35);g.addChild(body);
   const head=new pc.Entity();head.addComponent('render',{type:'box',material:mat([0.9,0.75,0.6])});head.setLocalPosition(0,1.45,0);head.setLocalScale(0.45,0.45,0.45);g.addChild(head);
@@ -559,11 +561,13 @@ LOCS.forEach((l,i)=>{
   const arm2=new pc.Entity();arm2.addComponent('render',{type:'box',material:mat(l.npc.color)});arm2.setLocalPosition(0.35,0.9,0);arm2.setLocalScale(0.15,0.6,0.15);g.addChild(arm2);
   const hat=new pc.Entity();hat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});hat.setLocalPosition(0,1.75,0);hat.setLocalScale(0.55,0.15,0.55);g.addChild(hat);
   const spear=new pc.Entity();spear.addComponent('render',{type:'box',material:trunkMat});spear.setLocalPosition(0.45,1.0,0.2);spear.setLocalScale(0.1,1.2,0.1);g.addChild(spear);
+  // Золотой маркер квеста над головой
+  const marker=new pc.Entity();marker.addComponent('render',{type:'box',material:goldMat});marker.setLocalPosition(0,2.3,0);marker.setLocalScale(0.35,0.35,0.35);g.addChild(marker);
   g.setLocalPosition(gx,top+0.5,gz);
   // Позиция в стороне (когда пропустил)
   const sx=Math.round(gx+(-uz)*3);
   const sz=Math.round(gz+(ux)*3);
-  g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0}};
+  g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0},marker:marker};
   world.addChild(g);
   guards.push(g);
 });
@@ -940,7 +944,9 @@ document.getElementById('closeFinal').addEventListener('click',()=>{
 });
 
 // Игровой цикл
+let t=0;
 app.on('update',dt=>{
+  t+=dt;
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=new pc.Vec3(-forward.z,0,forward.x);
   const move=new pc.Vec3(
@@ -966,9 +972,12 @@ app.on('update',dt=>{
   const targetY=(groundTop(p.x,p.z)??BASE)+0.5;
   player.setLocalPosition(p.x,p.y+(targetY-p.y)*0.2,p.z);
   updateCamera();
-  // Стражники
+  // Стражники: маркер квеста покачивается
   guards.forEach(g=>{
     const u=g.userData;
+    if(u.marker){
+      u.marker.setLocalPosition(0,2.3+Math.sin(t*3)*0.15,0);
+    }
     if(u.passed){
       const gp=g.getLocalPosition();
       const tx=u.side.x, tz=u.side.z;
