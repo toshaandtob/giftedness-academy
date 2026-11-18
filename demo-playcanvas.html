@@ -15,6 +15,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .hearts{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:4px;font-size:22px;text-shadow:0 2px 4px #000}
 .heart{color:#ff5a5a}
 .heart.empty{color:rgba(255,255,255,.25)}
+#compass{position:absolute;left:50%;top:60px;transform:translateX(-50%);font-size:28px;color:#ffe9a8;text-shadow:0 2px 6px #000;pointer-events:none}
 .hotbar{position:absolute;right:20px;bottom:20px;display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px);pointer-events:auto;transform-origin:bottom right;transform:scale(var(--btnScale))}
 .slot{width:56px;height:56px;border:2px solid rgba(255,255,255,.35);border-radius:8px;display:grid;place-items:center;position:relative;background:rgba(0,0,0,.35);cursor:pointer}
 .slot .icon{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;font-size:20px}
@@ -98,6 +99,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   .quest .dot{width:10px;height:10px}
   .score{font-size:.8rem}
   .hearts{bottom:10px;font-size:13px;gap:1px}
+  #compass{font-size:20px;top:50px}
   .crosshair{width:14px;height:14px;border-width:1.5px}
   #joystick{left:10px;bottom:10px;width:100px;height:100px}
   #joyKnob{width:40px;height:40px}
@@ -136,9 +138,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <p>Пройдите все локации: стражник → мини-игра. Паркур между островами — прыгайте по блокам!</p>
         <div class="quest"><span class="dot gold"></span><span>Локаций пройдено: <span id="tasksDone">0</span>/<span id="tasksTotal">12</span></span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/<span id="lettersTotal">12</span></p>
+        <p>Сферы знаний: <span id="orbCount">0</span> · Собрано сфер подряд: <span id="orbStreak">0</span>/5</p>
       </div>
     </div>
   </div>
+  <div id="compass">➤</div>
   <div class="crosshair"></div>
   <div class="hearts" id="hearts"></div>
   <div class="prompt" id="prompt">E — действие</div>
@@ -182,6 +186,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <h2>Академия знаний</h2>
     <p>Психолого-педагогическая диагностика одаренности</p>
     <p>Сначала изучите материал (12 разделов), затем пройдите тест — и только после этого откроется 3D-игра с мини-играми.</p>
+    <p>В игре: стражники сразу дают тестовые вопросы, а на островах можно собирать <b>сферы знаний</b> — за каждые 5 сфер бонус: +1 сердце!</p>
     <button id="openTheory">📚 Изучить материал</button>
     <button id="startGameBtn">🎮 Начать игру</button>
     <p id="gameLockHint" style="color:#ff8a80;font-size:.85rem;margin-top:.4rem"></p>
@@ -216,7 +221,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок и графика — через ⚙.</p>
     <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок, E — действие. Мобильные кнопки на ПК скрыты.</p>
     <p><b>Стражники:</b> подойдите к стражнику — он сразу даст тестовый вопрос по материалу. Ответьте верно — и перейдёте на следующий остров.</p>
-    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней, с меньшим разрешением и зоной прорисовки. Дальние острова скрываются, чтобы не нагружать телефон.</p>
+    <p><b>Сферы знаний:</b> светящиеся шарики на островах. Соберите 5 подряд — получите +1 сердце. Компас сверху показывает путь к следующему стражнику.</p>
+    <p><b>Сундуки-сюрпризы:</b> некоторые сундуки дают случайный бонус: еду, сердце или сферу знаний.</p>
+    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней, с меньшим разрешением и зоной прорисовки.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -333,6 +340,7 @@ const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
 const appleMat=mat([0.85,0.15,0.15],[0.4,0.05,0.05]);
 const gameMat=mat([0.5,0.7,0.9],[0.2,0.4,0.6]);
+const orbMat=mat([0.95,0.85,0.3],[1,0.8,0.2]);
 const flowerMats=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95]),mat([0.6,0.4,0.8])];
 
 const world=new pc.Entity('world');
@@ -821,7 +829,7 @@ function addChestAt(l,p){
   const base=new pc.Entity();base.addComponent('render',{type:'box',material:woodMat});base.setLocalPosition(0,0.25,0);base.setLocalScale(0.9,0.5,0.6);g.addChild(base);
   const lid=new pc.Entity();lid.addComponent('render',{type:'box',material:darkStone});lid.setLocalPosition(0,0.55,0);lid.setLocalScale(0.9,0.2,0.6);g.addChild(lid);
   g.setLocalPosition(p.x,top+0.5,p.z);
-  g.userData={chest:true,opened:false,lid:lid,alive:true,loc:LOCS.indexOf(l)};
+  g.userData={chest:true,opened:false,lid:lid,alive:true,loc:LOCS.indexOf(l),surprise:Math.random()<0.4};
   world.addChild(g);
   bucketEntity(g);
   chests.push(g);
@@ -873,6 +881,8 @@ const questTypes=['gold','blue','purple','green'];
 
 let questType='gold';
 let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
+let orbsCollected=0,orbStreak=0;
+const achievements={firstOre:false,firstApple:false,orbs5:false,allGuards:false};
 const tasks={};
 for(let i=1;i<=12;i++)tasks['t'+i]=false;
 const inventory={gold:0,blue:0,purple:0,green:0,red:0};
@@ -905,6 +915,27 @@ function spawnInitial(){
   for(let i=0;i<4;i++)spawnOre('red');
 }
 spawnInitial();
+
+const orbs=[];
+function spawnOrb(){
+  const l=LOCS[Math.floor(Math.random()*LOCS.length)];
+  const a=Math.random()*Math.PI*2;
+  const r=2+Math.random()*(locRadius(l.id)-3);
+  const x=Math.round(l.cx+Math.cos(a)*r);
+  const z=Math.round(l.cz+Math.sin(a)*r);
+  const top=groundTop(x,z);
+  if(top==null)return;
+  const o=new pc.Entity('orb_'+orbs.length);
+  o.addComponent('render',{type:'sphere',material:orbMat});
+  o.setLocalPosition(x,top+1.2,z);
+  o.setLocalScale(0.35,0.35,0.35);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.85,0.3),intensity:1.2,range:6});pl.setLocalPosition(0,0,0);o.addChild(pl);
+  o.userData={orb:true,alive:true};
+  world.addChild(o);
+  bucketEntity(o);
+  orbs.push(o);
+}
+for(let i=0;i<18;i++)spawnOrb();
 
 function setQuest(){
   questType=questTypes[Math.floor(Math.random()*questTypes.length)];
@@ -958,6 +989,8 @@ function updateHUD(){
   document.getElementById('cntBlue').textContent=inventory.blue;
   document.getElementById('cntPurple').textContent=inventory.purple;
   document.getElementById('cntGreen').textContent=inventory.green;
+  document.getElementById('orbCount').textContent=orbsCollected;
+  document.getElementById('orbStreak').textContent=orbStreak;
   renderHearts();
 }
 updateHUD();
@@ -975,6 +1008,11 @@ function toast(text){
 function flash(){
   const el=document.getElementById('flash');
   el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);
+}
+function achieve(key,text){
+  if(achievements[key])return;
+  achievements[key]=true;
+  toast('🏆 Достижение: '+text);
 }
 
 const sun=new pc.Entity('sun');
@@ -1261,6 +1299,23 @@ function placeBlock(){
   updateHUD();
 }
 
+function collectOrb(o){
+  o.userData.alive=false;
+  world.removeChild(o);
+  orbsCollected++;orbStreak++;score+=2;food++;
+  achieve('firstOrb','Первая сфера знаний!');
+  if(orbStreak>=5){
+    orbStreak=0;
+    if(hearts<maxHearts){hearts++;toast('Бонус: 5 сфер подряд — +1 сердце!');}
+    else{score+=5;toast('Бонус: 5 сфер подряд — +5 очков!');}
+    achieve('orbs5','5 сфер подряд!');
+  }else{
+    toast('Сфера знаний собрана! +2 очка, +1 еда.');
+  }
+  setTimeout(spawnOrb,3000);
+  updateHUD();
+}
+
 function mineAt(cx,cy){
   if(gameOver)return;
   const ndcX=(cx/window.innerWidth)*2-1;
@@ -1292,7 +1347,12 @@ function mineAt(cx,cy){
   gameStations.forEach(check);
   chessCells.forEach(check);
   seaCells.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты, мини-игры и доски.');return;}
+  orbs.forEach(check);
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты, мини-игры, сферы и доски.');return;}
+  if(best.userData.orb){
+    collectOrb(best);
+    return;
+  }
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -1384,6 +1444,7 @@ function mineAt(cx,cy){
     best.userData.alive=false;
     world.removeChild(best);
     food++;foodTotal++;
+    achieve('firstApple','Первое яблоко!');
     toast('Яблоко сорвано! +1 еда.');
     updateHUD();
     return;
@@ -1400,6 +1461,7 @@ function mineAt(cx,cy){
   best.userData.alive=false;
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
   inventory[type]++;
+  achieve('firstOre','Первая руда добыта!');
   if(type===questType){
     food++;foodTotal++;score++;toast('Верно! Получена еда.');
     setTimeout(()=>spawnOre(type),1500);
@@ -1423,8 +1485,20 @@ function interactChest(c){
     c.userData.opened=true;
     c.userData.lid.setLocalPosition(0,0.8,-0.2);
     c.userData.lid.setLocalEulerAngles(-60,0,0);
-    food++;foodTotal++;chestsOpened++;
-    toast('Сундук открыт! Получена еда.');
+    chestsOpened++;
+    if(c.userData.surprise){
+      const roll=Math.random();
+      if(roll<0.4){
+        food+=2;toast('Сюрприз! +2 еды.');
+      }else if(roll<0.7&&hearts<maxHearts){
+        hearts++;toast('Сюрприз! +1 сердце.');
+      }else{
+        orbsCollected++;score+=3;toast('Сюрприз! +1 сфера знаний, +3 очка.');
+      }
+    }else{
+      food++;foodTotal++;
+      toast('Сундук открыт! Получена еда.');
+    }
   }else{
     toast('Сундук пуст.');
   }
@@ -1453,11 +1527,13 @@ function openQuiz(guard){
         tasks['t'+idx]=true;
         unlockBridges('t'+idx);
         guard.userData.passed=true;
-        toast('Верно! Стражник пропускает вас.');
-        updateHUD();
-        if(idx===12){
+        score+=5;
+        toast('Верно! +5 очков. Стражник пропускает вас.');
+        if(tasksDoneCount()===12){
+          achieve('allGuards','Все 12 стражников пройдены!');
           setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
         }
+        updateHUD();
       }else{
         hearts-=1;
         flash();
@@ -1595,11 +1671,14 @@ function findNear(){
   beacons.forEach(o=>check(o,5));
   mineEntrances.forEach(o=>check(o,3));
   gameStations.forEach(o=>check(o,3));
+  orbs.forEach(o=>check(o,3));
   return best;
 }
 function interact(){
   if(!near)return;
-  if(near.userData.chest){
+  if(near.userData.orb){
+    collectOrb(near);
+  }else if(near.userData.chest){
     interactChest(near);
   }else if(near.userData.beacon){
     const l=LOCS[near.userData.loc];
@@ -1709,12 +1788,15 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 
 document.getElementById('restart').addEventListener('click',()=>{
   hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;
+  orbsCollected=0;orbStreak=0;
   for(let i=1;i<=12;i++)tasks['t'+i]=false;
   inventory.gold=0;inventory.blue=0;inventory.purple=0;inventory.green=0;inventory.red=0;
   collectedLetters.length=0;selectedLetter=null;
   document.getElementById('gameover').classList.remove('show');
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
+  orbs.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
+  orbs.length=0;
   letterBlocks.forEach(l=>{if(!l.userData.alive){l.userData.alive=true;world.addChild(l);}});
   apples.forEach(a=>{if(!a.userData.alive){a.userData.alive=true;world.addChild(a);}});
   chests.forEach(c=>{c.userData.opened=false;c.userData.lid.setLocalPosition(0,0.55,0);c.userData.lid.setLocalEulerAngles(0,0,0);});
@@ -1723,7 +1805,9 @@ document.getElementById('restart').addEventListener('click',()=>{
   chessCells.forEach(c=>{c.userData.queen=false;const q=c.children.find(x=>x.userData&&x.userData.isQueen);if(q)c.removeChild(q);});
   heldQueen=null;
   seaCells.forEach(c=>{c.userData.revealed=false;c.render.material=blueMat;});
-  spawnInitial();setQuest();updateHUD();
+  spawnInitial();
+  for(let i=0;i<18;i++)spawnOrb();
+  setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
   vy=0;onGround=true;
   toast('Игра начата заново.');
@@ -1852,6 +1936,13 @@ app.on('update',dt=>{
       c.setLocalPosition(p.x,p.y,p.z);
     });
   }
+  orbs.forEach(o=>{
+    if(o.userData.alive){
+      const p=o.getLocalPosition();
+      o.setLocalPosition(p.x,p.y+Math.sin(t*2)*0.15,p.z);
+      o.setLocalEulerAngles(0,t*40,0);
+    }
+  });
   cullTimer-=dt;
   if(cullTimer<=0){
     cullTimer=0.25;
@@ -1926,6 +2017,20 @@ app.on('update',dt=>{
   }
   player.setLocalEulerAngles(0,yaw*180/Math.PI+180,0);
   updateCamera();
+  const nextGuard=guards.find(g=>!g.userData.passed);
+  const compass=document.getElementById('compass');
+  if(nextGuard){
+    const gp=nextGuard.getLocalPosition();
+    const dx=gp.x-p2.x,dz=gp.z-p2.z;
+    const targetAngle=Math.atan2(-dx,-dz);
+    let rel=targetAngle-yaw;
+    while(rel>Math.PI)rel-=Math.PI*2;
+    while(rel<-Math.PI)rel+=Math.PI*2;
+    compass.style.transform='translateX(-50%) rotate('+(-rel*180/Math.PI)+'deg)';
+    compass.style.opacity='1';
+  }else{
+    compass.style.opacity='0.3';
+  }
   guards.forEach(g=>{
     const u=g.userData;
     if(u.marker){u.marker.setLocalPosition(0,2.3+Math.sin(t*3)*0.15,0);}
@@ -1947,7 +2052,8 @@ app.on('update',dt=>{
   if(near){
     prompt.classList.add('show');
     actionBtn.classList.add('show');
-    if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
+    if(near.userData.orb)prompt.textContent='E / клик — собрать сферу знаний';
+    else if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
     else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
     else if(near.userData.game)prompt.textContent='E / клик — мини-игра: '+near.userData.gameDef.title;
     else if(near.userData.mine)prompt.textContent='E / клик — '+(near.userData.underground?'подняться':'спуститься в шахту');
