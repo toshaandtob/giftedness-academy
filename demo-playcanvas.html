@@ -30,10 +30,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #joyKnob{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
 #jumpBtn{position:absolute;right:24px;bottom:110px;width:64px;height:64px;border-radius:50%;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:24px;pointer-events:auto;display:grid;place-items:center;cursor:pointer;transform-origin:center;transform:scale(var(--btnScale))}
 #settingsBtn{position:absolute;right:24px;top:70px;width:40px;height:40px;border-radius:10px;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;pointer-events:auto;cursor:pointer;display:grid;place-items:center}
-#settingsPanel{position:absolute;right:24px;top:120px;background:rgba(20,20,20,.85);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:.6rem;color:#fff;display:none;pointer-events:auto;min-width:180px}
+#settingsPanel{position:absolute;right:24px;top:120px;background:rgba(20,20,20,.85);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:.6rem;color:#fff;display:none;pointer-events:auto;min-width:200px;max-height:60vh;overflow:auto}
 #settingsPanel.show{display:block}
-#settingsPanel label{font-size:.85rem;display:block;margin-bottom:.4rem}
-#settingsPanel input{width:100%}
+#settingsPanel label{font-size:.8rem;display:block;margin-bottom:.35rem}
+#settingsPanel input[type=range]{width:100%}
+#settingsPanel select{width:100%;padding:.25rem;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff}
 #settingsPanel button{margin-top:.3rem;padding:.3rem .7rem;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer}
 .actionBtn{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);padding:.6rem 1.2rem;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:rgba(20,20,20,.7);color:#fff;font-family:'Marcellus',serif;font-weight:700;cursor:pointer;pointer-events:auto;display:none}
 .actionBtn.show{display:block}
@@ -101,7 +102,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   #joyKnob{width:40px;height:40px}
   #jumpBtn{right:10px;bottom:80px;width:52px;height:52px;font-size:18px}
   #settingsBtn{right:10px;top:60px;width:34px;height:34px;font-size:14px}
-  #settingsPanel{right:10px;top:100px;min-width:150px}
+  #settingsPanel{right:10px;top:100px;min-width:170px;max-height:55vh}
   .hotbar{right:6px;bottom:6px;padding:4px;gap:3px}
   .slot{width:38px;height:38px}
   .slot .icon{width:20px;height:20px;font-size:11px}
@@ -147,6 +148,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div id="settingsPanel">
     <label>Размер кнопок: <span id="btnSizeVal">1.0</span></label>
     <input type="range" id="btnSize" min="0.7" max="1.6" step="0.1" value="1">
+    <label>Графика:
+      <select id="gfxQuality">
+        <option value="low">Низкая (для слабых телефонов)</option>
+        <option value="medium" selected>Средняя</option>
+        <option value="high">Высокая</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="gfxShadows"> Тени</label>
+    <label>Разрешение: <span id="gfxResVal">100%</span></label>
+    <input type="range" id="gfxRes" min="0.5" max="1" step="0.05" value="1">
     <button id="closeSettings">Закрыть</button>
   </div>
   <div class="hotbar">
@@ -165,7 +176,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок — через ⚙.</p>
+    <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок и графика — через ⚙.</p>
+    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней и с меньшим разрешением. «Высокая» — с тенями.</p>
     <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок.</p>
     <button id="startGame">Начать игру</button>
   </div>
@@ -1078,6 +1090,55 @@ btnSize.addEventListener('input',()=>{
   applyScale(btnSize.value);
   localStorage.setItem('btnScale',btnSize.value);
 });
+
+const gfxQuality=document.getElementById('gfxQuality');
+const gfxShadows=document.getElementById('gfxShadows');
+const gfxRes=document.getElementById('gfxRes');
+const gfxResVal=document.getElementById('gfxResVal');
+function setShadows(e,on){
+  if(e.render){e.render.castShadows=on;e.render.receiveShadows=on;}
+  e.children.forEach(c=>setShadows(c,on));
+}
+function applyGraphics(){
+  const q=gfxQuality.value;
+  let shadows=gfxShadows.checked;
+  let res=parseFloat(gfxRes.value);
+  if(q==='low'){
+    shadows=false;
+    res=Math.min(res,0.75);
+    gfxShadows.checked=false;
+    if(parseFloat(gfxRes.value)>0.75)gfxRes.value='0.75';
+    scene.fogEnd=120;
+    light.light.shadowDistance=40;
+  }else if(q==='medium'){
+    shadows=false;
+    gfxShadows.checked=false;
+    scene.fogEnd=180;
+    light.light.shadowDistance=70;
+  }else{
+    scene.fogEnd=220;
+    light.light.shadowDistance=100;
+  }
+  light.light.castShadows=shadows;
+  setShadows(world,shadows);
+  app.graphicsDevice.maxPixelRatio=res;
+  app.resizeCanvas(window.innerWidth,window.innerHeight);
+  gfxResVal.textContent=Math.round(res*100)+'%';
+  localStorage.setItem('gfxQuality',q);
+  localStorage.setItem('gfxShadows',shadows?'1':'0');
+  localStorage.setItem('gfxRes',String(res));
+}
+const savedQ=localStorage.getItem('gfxQuality')||'medium';
+const savedSh=localStorage.getItem('gfxShadows');
+const savedRes=localStorage.getItem('gfxRes')||'1';
+gfxQuality.value=savedQ;
+if(savedSh!=null)gfxShadows.checked=savedSh==='1';
+gfxRes.value=savedRes;
+applyGraphics();
+gfxQuality.addEventListener('change',applyGraphics);
+gfxShadows.addEventListener('change',applyGraphics);
+gfxRes.addEventListener('input',applyGraphics);
+
 settingsBtn.addEventListener('click',()=>settingsPanel.classList.toggle('show'));
 document.getElementById('closeSettings').addEventListener('click',()=>settingsPanel.classList.remove('show'));
 
@@ -1619,12 +1680,14 @@ app.on('update',dt=>{
   camera.camera.clearColor=sky;
   scene.ambientLight=new pc.Color(0.12+0.38*dayF,0.12+0.38*dayF,0.18+0.37*dayF);
   light.light.intensity=0.25+1.05*dayF;
-  clouds.forEach(c=>{
-    const p=c.getLocalPosition();
-    p.x+=dt*1.5;
-    if(p.x>120)p.x=-120;
-    c.setLocalPosition(p.x,p.y,p.z);
-  });
+  if(gfxQuality.value!=='low'){
+    clouds.forEach(c=>{
+      const p=c.getLocalPosition();
+      p.x+=dt*1.5;
+      if(p.x>120)p.x=-120;
+      c.setLocalPosition(p.x,p.y,p.z);
+    });
+  }
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=new pc.Vec3(-forward.z,0,forward.x);
   let fInput=(keys.up?1:0)-(keys.down?1:0);
