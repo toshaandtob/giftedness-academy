@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Академия знаний — Психолого-педагогическая диагностика одаренности</title>
 <style>
-:root{--gold:#d9a441;--ink:#3b2d20;--danger:#b3573f}
+:root{--gold:#d9a441;--ink:#3b2d20;--danger:#b3573f;--btnScale:1}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;position:fixed;width:100%;font-family:'Cormorant Garamond',Georgia,serif;color:var(--ink);background:#0e1420;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 #app{position:fixed;inset:0}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .hud{position:fixed;inset:0;pointer-events:none;z-index:10}
 .crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);border-radius:50%;box-shadow:0 0 10px rgba(255,255,255,.4)}
-.hearts{position:absolute;left:50%;bottom:130px;transform:translateX(-50%);display:flex;gap:4px;font-size:22px;text-shadow:0 2px 4px #000}
+.hearts{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:4px;font-size:22px;text-shadow:0 2px 4px #000}
 .heart{color:#ff5a5a}
 .heart.empty{color:rgba(255,255,255,.25)}
-.hotbar{position:absolute;right:20px;bottom:20px;display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px);pointer-events:auto}
+.hotbar{position:absolute;right:20px;bottom:20px;display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px);pointer-events:auto;transform-origin:bottom right;transform:scale(var(--btnScale))}
 .slot{width:56px;height:56px;border:2px solid rgba(255,255,255,.35);border-radius:8px;display:grid;place-items:center;position:relative;background:rgba(0,0,0,.35);cursor:pointer}
 .slot .icon{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;font-size:20px}
 .slot .count{position:absolute;right:4px;bottom:2px;font:700 14px/1 'Marcellus',serif;color:#fff;text-shadow:0 1px 2px #000}
@@ -26,13 +26,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .icon.backpack{background:linear-gradient(135deg,#a1887f,#5d4037)}
 .icon.letter{background:linear-gradient(135deg,#fff8e1,#d9a441)}
 .icon.block{background:linear-gradient(135deg,#cfd8dc,#78909c)}
-.pad{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;pointer-events:auto}
-.pad button{background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;user-select:none;touch-action:none;-webkit-user-select:none}
-.pad .up{grid-column:2;grid-row:1}
-.pad .left{grid-column:1;grid-row:2}
-.pad .down{grid-column:2;grid-row:3}
-.pad .right{grid-column:3;grid-row:2}
-.pad .jump{grid-column:3;grid-row:1}
+#joystick{position:absolute;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);pointer-events:none;display:none;transform-origin:center;transform:scale(var(--btnScale))}
+#joyKnob{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
+#jumpBtn{position:absolute;right:24px;bottom:110px;width:64px;height:64px;border-radius:50%;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:24px;pointer-events:auto;display:grid;place-items:center;cursor:pointer;transform-origin:center;transform:scale(var(--btnScale))}
+#settingsBtn{position:absolute;right:24px;top:70px;width:40px;height:40px;border-radius:10px;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;pointer-events:auto;cursor:pointer;display:grid;place-items:center}
+#settingsPanel{position:absolute;right:24px;top:120px;background:rgba(20,20,20,.85);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:.6rem;color:#fff;display:none;pointer-events:auto;min-width:180px}
+#settingsPanel.show{display:block}
+#settingsPanel label{font-size:.85rem;display:block;margin-bottom:.4rem}
+#settingsPanel input{width:100%}
+#settingsPanel button{margin-top:.3rem;padding:.3rem .7rem;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer}
 .actionBtn{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);padding:.6rem 1.2rem;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:rgba(20,20,20,.7);color:#fff;font-family:'Marcellus',serif;font-weight:700;cursor:pointer;pointer-events:auto;display:none}
 .actionBtn.show{display:block}
 .prompt{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);background:rgba(20,20,20,.7);color:#fff;padding:.4rem .8rem;border-radius:8px;border:1px solid rgba(255,255,255,.3);font-family:'Marcellus',serif;display:none}
@@ -93,10 +95,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   .panel-body p{font-size:.65rem;margin:.1rem 0}
   .quest .dot{width:10px;height:10px}
   .score{font-size:.8rem}
-  .hearts{bottom:105px;font-size:13px;gap:1px}
+  .hearts{bottom:10px;font-size:13px;gap:1px}
   .crosshair{width:14px;height:14px;border-width:1.5px}
-  .pad{grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px);gap:2px;left:6px;bottom:6px}
-  .pad button{width:34px;height:34px;font-size:13px;border-width:1.5px}
+  #joystick{left:10px;bottom:10px;width:100px;height:100px}
+  #joyKnob{width:40px;height:40px}
+  #jumpBtn{right:10px;bottom:80px;width:52px;height:52px;font-size:18px}
+  #settingsBtn{right:10px;top:60px;width:34px;height:34px;font-size:14px}
+  #settingsPanel{right:10px;top:100px;min-width:150px}
   .hotbar{right:6px;bottom:6px;padding:4px;gap:3px}
   .slot{width:38px;height:38px}
   .slot .icon{width:20px;height:20px;font-size:11px}
@@ -136,12 +141,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="hearts" id="hearts"></div>
   <div class="prompt" id="prompt">E — действие</div>
   <button class="actionBtn" id="actionBtn">Действие</button>
-  <div class="pad">
-    <button class="up" data-dir="up">↑</button>
-    <button class="left" data-dir="left">←</button>
-    <button class="down" data-dir="down">↓</button>
-    <button class="right" data-dir="right">→</button>
-    <button class="jump" data-dir="jump">⤒</button>
+  <div id="joystick"><div id="joyKnob"></div></div>
+  <button id="jumpBtn">⤒</button>
+  <button id="settingsBtn">⚙</button>
+  <div id="settingsPanel">
+    <label>Размер кнопок: <span id="btnSizeVal">1.0</span></label>
+    <input type="range" id="btnSize" min="0.7" max="1.6" step="0.1" value="1">
+    <button id="closeSettings">Закрыть</button>
   </div>
   <div class="hotbar">
     <div class="slot active" data-slot="pickaxe"><div class="icon pickaxe">⛏️</div><span class="count">1</span></div>
@@ -159,8 +165,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица. <b>ЛКМ</b> — добыть/взаимодействовать. <b>ПКМ</b> — поставить блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p><b>Хитбоксы блоков:</b> по поставленным блокам и руде можно ходить (как по ступенькам), сквозь них не пройти.</p>
+    <p><b>Телефон:</b> левая половина экрана — джойстик (движение), правая — поворот камеры (свайп). Кнопка ⤒ — прыжок. Размер кнопок настраивается через ⚙.</p>
+    <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок.</p>
     <p><b>День и ночь:</b> солнце сменяется луной, небо темнеет, облака плывут.</p>
     <button id="startGame">Начать игру</button>
   </div>
@@ -981,44 +987,100 @@ window.addEventListener('keyup',e=>{
   if(c==='Space')keys.jump=false;
 });
 window.addEventListener('blur',()=>{keys.up=keys.down=keys.left=keys.right=keys.jump=false;});
-function bindPad(){
-  document.querySelectorAll('.pad button').forEach(btn=>{
-    const dir=btn.dataset.dir;
-    const start=e=>{e.preventDefault();keys[dir]=true;};
-    const end=e=>{e.preventDefault();keys[dir]=false;};
-    btn.addEventListener('pointerdown',start);
-    btn.addEventListener('pointerup',end);
-    btn.addEventListener('pointercancel',end);
-    btn.addEventListener('pointerleave',end);
-    btn.addEventListener('touchstart',start,{passive:false});
-    btn.addEventListener('touchend',end,{passive:false});
-    btn.addEventListener('touchcancel',end,{passive:false});
-    btn.addEventListener('contextmenu',e=>e.preventDefault());
-  });
-}
-bindPad();
 
-let dragging=false,lastX=0,lastY=0,moved=false;
+const joy={active:false,id:null,ox:0,oy:0,dx:0,dy:0};
+let lookId=null;
+let dragging=false,lastX=0,lastY=0,moved=false,moveDist=0;
 const MOUSE_SENS_X=0.009;
 const MOUSE_SENS_Y=0.007;
+const JOY_MAX=50;
+function resetJoyUI(){
+  const j=document.getElementById('joystick');
+  j.style.display='none';
+  document.getElementById('joyKnob').style.transform='translate(-50%,-50%)';
+}
 canvas.addEventListener('pointerdown',e=>{
-  dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;
-});
-window.addEventListener('pointermove',e=>{
-  if(!dragging)return;
-  yaw-=(e.clientX-lastX)*MOUSE_SENS_X;
-  pitch=Math.min(0.75,Math.max(-1.0,pitch-(e.clientY-lastY)*MOUSE_SENS_Y));
-  lastX=e.clientX;lastY=e.clientY;
-  if(Math.abs(e.movementX)+Math.abs(e.movementY)>4)moved=true;
-  updateCamera();
-});
-window.addEventListener('pointerup',e=>{
-  dragging=false;
-  if(e.target===canvas&&!moved){
-    if(e.button===2){placeBlock();}else{mineAt(e.clientX,e.clientY);}
+  if(e.pointerType==='mouse'){
+    dragging=true;moved=false;moveDist=0;lastX=e.clientX;lastY=e.clientY;
+    return;
+  }
+  if(e.clientX<window.innerWidth/2&&joy.id===null){
+    joy.id=e.pointerId;joy.active=true;joy.ox=e.clientX;joy.oy=e.clientY;joy.dx=0;joy.dy=0;
+    const j=document.getElementById('joystick');
+    j.style.display='block';
+    j.style.left=(e.clientX-60)+'px';
+    j.style.top=(e.clientY-60)+'px';
+  }else if(lookId===null){
+    lookId=e.pointerId;moved=false;moveDist=0;lastX=e.clientX;lastY=e.clientY;
   }
 });
+window.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'){
+    if(!dragging)return;
+    yaw-=(e.clientX-lastX)*MOUSE_SENS_X;
+    pitch=Math.min(0.75,Math.max(-1.0,pitch-(e.clientY-lastY)*MOUSE_SENS_Y));
+    moveDist+=Math.abs(e.clientX-lastX)+Math.abs(e.clientY-lastY);
+    lastX=e.clientX;lastY=e.clientY;
+    if(moveDist>4)moved=true;
+    updateCamera();
+    return;
+  }
+  if(e.pointerId===joy.id){
+    let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;
+    const len=Math.hypot(dx,dy);
+    if(len>JOY_MAX){dx=dx/len*JOY_MAX;dy=dy/len*JOY_MAX;}
+    joy.dx=dx/JOY_MAX;joy.dy=dy/JOY_MAX;
+    document.getElementById('joyKnob').style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+  }else if(e.pointerId===lookId){
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    yaw-=dx*MOUSE_SENS_X;
+    pitch=Math.min(0.75,Math.max(-1.0,pitch-dy*MOUSE_SENS_Y));
+    moveDist+=Math.abs(dx)+Math.abs(dy);
+    lastX=e.clientX;lastY=e.clientY;
+    if(moveDist>8)moved=true;
+    updateCamera();
+  }
+});
+function endPointer(e){
+  if(e.pointerType==='mouse'){
+    dragging=false;
+    if(e.target===canvas&&!moved){
+      if(e.button===2){placeBlock();}else{mineAt(e.clientX,e.clientY);}
+    }
+    return;
+  }
+  if(e.pointerId===joy.id){
+    joy.id=null;joy.active=false;joy.dx=0;joy.dy=0;resetJoyUI();
+  }
+  if(e.pointerId===lookId){
+    lookId=null;
+    if(!moved&&e.target===canvas){mineAt(e.clientX,e.clientY);}
+  }
+}
+window.addEventListener('pointerup',endPointer);
+window.addEventListener('pointercancel',endPointer);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+const jumpBtn=document.getElementById('jumpBtn');
+['pointerdown','touchstart'].forEach(ev=>jumpBtn.addEventListener(ev,e=>{e.preventDefault();keys.jump=true;}));
+['pointerup','pointercancel','touchend','touchcancel','pointerleave'].forEach(ev=>jumpBtn.addEventListener(ev,e=>{e.preventDefault();keys.jump=false;}));
+
+const settingsBtn=document.getElementById('settingsBtn');
+const settingsPanel=document.getElementById('settingsPanel');
+const btnSize=document.getElementById('btnSize');
+const btnSizeVal=document.getElementById('btnSizeVal');
+function applyScale(v){
+  document.documentElement.style.setProperty('--btnScale',v);
+  btnSizeVal.textContent=parseFloat(v).toFixed(1);
+}
+const savedScale=localStorage.getItem('btnScale')||'1';
+btnSize.value=savedScale;applyScale(savedScale);
+btnSize.addEventListener('input',()=>{
+  applyScale(btnSize.value);
+  localStorage.setItem('btnScale',btnSize.value);
+});
+settingsBtn.addEventListener('click',()=>settingsPanel.classList.toggle('show'));
+document.getElementById('closeSettings').addEventListener('click',()=>settingsPanel.classList.remove('show'));
 
 function placeBlock(){
   if(gameOver)return;
@@ -1566,11 +1628,15 @@ app.on('update',dt=>{
   });
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=new pc.Vec3(-forward.z,0,forward.x);
+  let fInput=(keys.up?1:0)-(keys.down?1:0);
+  let rInput=(keys.right?1:0)-(keys.left?1:0);
+  if(joy.active){fInput=-joy.dy;rInput=joy.dx;}
   const move=new pc.Vec3(
-    forward.x*(keys.up-keys.down)+right.x*(keys.right-keys.left),
+    forward.x*fInput+right.x*rInput,
     0,
-    forward.z*(keys.up-keys.down)+right.z*(keys.right-keys.left)
+    forward.z*fInput+right.z*rInput
   );
+  if(move.length()>1)move.normalize();
   const p=player.getLocalPosition();
   const inMine=p.y<MINE_Y+3;
   const curTop=inMine?MINE_Y:(groundTop(p.x,p.z)??BASE);
@@ -1590,7 +1656,7 @@ app.on('update',dt=>{
       player.setLocalPosition(p.x,p.y,p.z);
     }
   }
-  if(move.length()>0){
+  if(move.length()>0.05){
     move.normalize();
     const speed=4;
     const nx=p.x+move.x*speed*dt;
