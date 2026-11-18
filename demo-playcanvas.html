@@ -160,7 +160,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица (как в Minecraft). <b>ЛКМ</b> — добыть блок. <b>ПКМ</b> — поставить выбранный блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p>Выберите блок в хотбаре (золото/кристалл/руна/семя), затем ПКМ — поставить блок. На каждом острове: обелиск → стражник → мини-игра.</p>
+    <p>Выберите блок в хотбаре (золото/кристалл/руна/семя), затем ПКМ — поставить блок. На каждом острове: обелиск → стражник → мини-игра. Теперь с тенями.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -242,8 +242,16 @@ const camera=new pc.Entity('camera');
 camera.addComponent('camera',{fov:70,near:0.1,far:800,clearColor:new pc.Color(0.5,0.7,1.0)});
 app.root.addChild(camera);
 
+// Свет с тенями (безопасно: только castShadows + базовые параметры)
 const light=new pc.Entity('light');
-light.addComponent('light',{type:'directional',color:new pc.Color(1,1,0.9),intensity:1.3,castShadows:false});
+light.addComponent('light',{
+  type:'directional',
+  color:new pc.Color(1,1,0.9),
+  intensity:1.3,
+  castShadows:true,
+  shadowDistance:100,
+  shadowResolution:1024
+});
 light.setEulerAngles(35,40,0);
 app.root.addChild(light);
 
@@ -885,6 +893,13 @@ const phat=new pc.Entity();phat.addComponent('render',{type:'box',material:mat([
 const startLoc=LOCS[0];
 player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
 world.addChild(player);
+
+// Включить тени на всех объектах (безопасно)
+function enableShadows(e){
+  if(e.render){e.render.castShadows=true;e.render.receiveShadows=true;}
+  e.children.forEach(enableShadows);
+}
+enableShadows(world);
 
 let yaw=0,pitch=0;
 function updateCamera(){
