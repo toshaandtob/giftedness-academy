@@ -152,8 +152,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера. <b>ЛКМ / E</b> — действие.</p>
-    <p>На каждом острове: <b>обелиск</b> (теория раздела) → <b>стражник</b> (вопрос) → <b>мини-игра</b> (интерактив из презентации). Письма, сундуки, яблоки, шахты — бонусы.</p>
+    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера (от 1 лица). <b>ЛКМ / E</b> — действие.</p>
+    <p>На каждом острове: <b>обелиск</b> (теория) → <b>стражник</b> (вопрос) → <b>мини-игра</b>. Шахматы и морской бой — прямо в 3D: кликайте по блокам на доске.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -232,7 +232,7 @@ scene.fogColor=new pc.Color(0.5,0.7,1.0);
 scene.fogStart=40;scene.fogEnd=220;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:800,clearColor:new pc.Color(0.5,0.7,1.0)});
+camera.addComponent('camera',{fov:70,near:0.1,far:800,clearColor:new pc.Color(0.5,0.7,1.0)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
@@ -616,8 +616,8 @@ const GAMES=[
    {q:'Ребенок мирит друзей, легко организует совместную игру. Сфера?',opts:['Социальная','Художественная','Академическая'],correct:0,note:'Социальная сфера.'}
   ]},
  {id:'circus',title:'Звери в цирке',desc:'Запомните зверей, затем найдите того, кто исчез.',type:'circus'},
- {id:'sea',title:'Морской бой',desc:'Найдите все корабли: один из 3 клеток, два из 2, два из 1.',type:'sea'},
- {id:'chess',title:'Сказочные шахматы',desc:'Расставьте 4 ферзя так, чтобы ни один не атаковал другого.',type:'chess'}
+ {id:'sea',title:'Морской бой',desc:'Найдите все корабли: кликайте по блокам на 3D-доске 7×7.',type:'sea3d'},
+ {id:'chess',title:'Сказочные шахматы',desc:'Расставьте 4 ферзя так, чтобы ни один не атаковал другого. Кликайте по блокам на 3D-доске 4×4.',type:'chess3d'}
 ];
 LOCS.forEach((l,i)=>{
   const gp=l.gamePos;
@@ -633,6 +633,54 @@ LOCS.forEach((l,i)=>{
   world.addChild(g);
   gameStations.push(g);
 });
+
+// 3D доски для шахмат и морского боя
+const chessCells=[];
+const seaCells=[];
+const chessLoc=LOCS.findIndex(l=>l.id==='creative');
+const seaLoc=LOCS.findIndex(l=>l.id==='savenkov');
+function buildChessBoard(locIdx){
+  const l=LOCS[locIdx];
+  const bx=l.cx-2,bz=l.cz-2;
+  const top=groundTop(bx,bz)??BASE;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const cell=new pc.Entity('chess_'+r+'_'+c);
+    cell.addComponent('render',{type:'box',material:((r+c)%2===0?stoneMat:darkStone)});
+    cell.setLocalPosition(bx+c,top+0.5,bz+r);
+    cell.setLocalScale(0.9,0.3,0.9);
+    cell.userData={chessCell:true,r:r,c:c,loc:locIdx,queen:false,alive:true};
+    world.addChild(cell);
+    chessCells.push(cell);
+  }
+}
+function buildSeaBoard(locIdx){
+  const l=LOCS[locIdx];
+  const bx=l.cx-3,bz=l.cz-3;
+  const top=groundTop(bx,bz)??BASE;
+  const ships=[];const sizes=[3,2,2,1,1];
+  sizes.forEach(len=>{
+    let placed=false;
+    while(!placed){
+      const horiz=Math.random()<0.5;
+      const r=Math.floor(Math.random()*7),c=Math.floor(Math.random()*7);
+      const cells=[];
+      for(let i=0;i<len;i++)cells.push({r:horiz?r:r+i,c:horiz?c+i:c});
+      if(cells.every(({r,c})=>r>=0&&r<7&&c>=0&&c<7&&!ships.some(s=>s.some(x=>Math.abs(x.r-r)<=1&&Math.abs(x.c-c)<=1)))){ships.push(cells);placed=true;}
+    }
+  });
+  for(let r=0;r<7;r++)for(let c=0;c<7;c++){
+    const cell=new pc.Entity('sea_'+r+'_'+c);
+    cell.addComponent('render',{type:'box',material:blueMat});
+    cell.setLocalPosition(bx+c,top+0.5,bz+r);
+    cell.setLocalScale(0.8,0.3,0.8);
+    const isShip=ships.some(s=>s.some(x=>x.r===r&&x.c===c));
+    cell.userData={seaCell:true,r:r,c:c,loc:locIdx,isShip:isShip,revealed:false,alive:true};
+    world.addChild(cell);
+    seaCells.push(cell);
+  }
+}
+if(chessLoc>=0)buildChessBoard(chessLoc);
+if(seaLoc>=0)buildSeaBoard(seaLoc);
 
 const letterBlocks=[];
 LOCS.forEach((l,i)=>{
@@ -836,14 +884,12 @@ const startLoc=LOCS[0];
 player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
 world.addChild(player);
 
-let yaw=0,pitch=0.5,dist=12;
+let yaw=0,pitch=0;
+// Камера от 1 лица
 function updateCamera(){
   const p=player.getLocalPosition();
-  const x=p.x+dist*Math.sin(yaw)*Math.cos(pitch);
-  const y=p.y+dist*Math.sin(pitch);
-  const z=p.z+dist*Math.cos(yaw)*Math.cos(pitch);
-  camera.setLocalPosition(x,y,z);
-  camera.lookAt(p);
+  camera.setLocalPosition(p.x,p.y+1.4,p.z);
+  camera.setLocalEulerAngles(pitch*180/Math.PI,yaw*180/Math.PI,0);
 }
 updateCamera();
 
@@ -895,7 +941,7 @@ canvas.addEventListener('pointerdown',e=>{
 window.addEventListener('pointermove',e=>{
   if(!dragging)return;
   yaw-=(e.clientX-lastX)*0.005;
-  pitch=Math.min(1.2,Math.max(0.1,pitch+(e.clientY-lastY)*0.004));
+  pitch=Math.min(1.2,Math.max(-0.8,pitch+(e.clientY-lastY)*0.004));
   lastX=e.clientX;lastY=e.clientY;
   if(Math.abs(e.movementX)+Math.abs(e.movementY)>4)moved=true;
   updateCamera();
@@ -913,7 +959,7 @@ function mineAt(cx,cy){
   const forward=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(0,0,-1),forward);
   const right=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(1,0,0),right);
   const up=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(0,1,0),up);
-  const fov=60*Math.PI/180,tanF=Math.tan(fov/2),aspect=window.innerWidth/window.innerHeight;
+  const fov=70*Math.PI/180,tanF=Math.tan(fov/2),aspect=window.innerWidth/window.innerHeight;
   const dir=forward.clone().add(right.clone().scale(ndcX*tanF*aspect)).add(up.clone().scale(ndcY*tanF)).normalize();
   let best=null,bestT=Infinity;
   const check=(o)=>{
@@ -934,7 +980,9 @@ function mineAt(cx,cy){
   mineEntrances.forEach(check);
   apples.forEach(check);
   gameStations.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты и мини-игры.');return;}
+  chessCells.forEach(check);
+  seaCells.forEach(check);
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты, мини-игры и доски.');return;}
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -959,6 +1007,57 @@ function mineAt(cx,cy){
       }
     });
     updateHUD();
+    return;
+  }
+  if(best.userData.chessCell){
+    // Шахматы 3D: поставить/убрать ферзя
+    const cell=best;
+    if(cell.userData.queen){
+      cell.userData.queen=false;
+      // Убрать ферзя (золотой блок сверху)
+      const q=cell.children.find(c=>c.userData&&c.userData.isQueen);
+      if(q)cell.removeChild(q);
+      toast('Ферзь убран.');
+    }else{
+      // Посчитать ферзей
+      const count=chessCells.filter(c=>c.userData.queen).length;
+      if(count>=4){toast('Уже 4 ферзя. Уберите один.');return;}
+      cell.userData.queen=true;
+      const q=new pc.Entity();
+      q.addComponent('render',{type:'box',material:goldMat});
+      q.setLocalPosition(0,0.4,0);
+      q.setLocalScale(0.5,0.5,0.5);
+      q.userData={isQueen:true};
+      cell.addChild(q);
+      toast('Ферзь поставлен. '+(count+1)+'/4');
+      // Проверка конфликта
+      const queens=chessCells.filter(c=>c.userData.queen);
+      let conflict=false;
+      for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
+        const a=queens[i].userData,b=queens[j].userData;
+        if(a.r===b.r||a.c===b.c||Math.abs(a.r-b.r)===Math.abs(a.c-b.c))conflict=true;
+      }
+      if(queens.length===4){
+        if(conflict){toast('Ферзи атакуют друг друга! Уберите один.');}
+        else{toast('Отлично! Ни один ферзь не атакует другого. Мини-игра пройдена!');}
+      }
+    }
+    return;
+  }
+  if(best.userData.seaCell){
+    // Морской бой 3D: выстрел
+    const cell=best;
+    if(cell.userData.revealed){toast('Уже стреляли сюда.');return;}
+    cell.userData.revealed=true;
+    if(cell.userData.isShip){
+      cell.render.material=redMat;
+      toast('Попадание! 💥');
+    }else{
+      cell.render.material=stoneMat;
+      toast('Мимо.');
+    }
+    const hits=seaCells.filter(c=>c.userData.revealed&&c.userData.isShip).length;
+    if(hits===8){toast('Победа! Все корабли потоплены!');}
     return;
   }
   if(best.userData.game){
@@ -1156,62 +1255,10 @@ function openGame(def){
         options.appendChild(b);
       });
     },2500);
-  }else if(def.type==='sea'){
-    const size=7;
-    const board=document.createElement('div');board.className='row';
-    const note=document.createElement('div');note.className='note';
-    const ships=[];const sizes=[3,2,2,1,1];
-    sizes.forEach(len=>{
-      let placed=false;
-      while(!placed){
-        const horiz=Math.random()<0.5;
-        const r=Math.floor(Math.random()*size),c=Math.floor(Math.random()*size);
-        const cells=[];
-        for(let i=0;i<len;i++)cells.push({r:horiz?r:r+i,c:horiz?c+i:c});
-        if(cells.every(({r,c})=>r>=0&&r<size&&c>=0&&c<size&&!ships.some(s=>s.some(x=>Math.abs(x.r-r)<=1&&Math.abs(x.c-c)<=1)))){ships.push(cells);placed=true;}
-      }
-    });
-    let hits=0,shots=0;
-    for(let r=0;r<size;r++)for(let c=0;c<size;c++){
-      const cell=document.createElement('div');cell.className='cell';
-      cell.addEventListener('click',()=>{
-        if(cell.classList.contains('hit')||cell.classList.contains('miss'))return;
-        shots++;
-        const isShip=ships.some(s=>s.some(x=>x.r===r&&x.c===c));
-        if(isShip){cell.classList.add('hit');cell.textContent='💥';hits++;}else{cell.classList.add('miss');cell.textContent='•';}
-        note.textContent='Выстрелов: '+shots+'. Попаданий: '+hits+' из 8.';
-      });
-      board.appendChild(cell);
-    }
-    body.appendChild(board);body.appendChild(note);
-  }else if(def.type==='chess'){
-    const size=4;
-    const board=document.createElement('div');board.className='row';
-    const note=document.createElement('div');note.className='note';
-    const queens=[];
-    function render(){
-      board.innerHTML='';
-      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
-        const cell=document.createElement('div');cell.className='cell';
-        const q=queens.find(q=>q.r===r&&q.c===c);
-        if(q){cell.textContent='♛';cell.classList.add('queen');}
-        cell.addEventListener('click',()=>{
-          if(q){queens.splice(queens.indexOf(q),1);}else if(queens.length<4){queens.push({r,c});}
-          render();
-        });
-        board.appendChild(cell);
-      }
-      if(queens.length===4){
-        let conflict=false;
-        for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
-          const a=queens[i],b=queens[j];
-          if(a.r===b.r||a.c===b.c||Math.abs(a.r-b.r)===Math.abs(a.c-b.c))conflict=true;
-        }
-        note.textContent=conflict?'Ферзи атакуют друг друга.':'Отлично! Ни один ферзь не атакует другого.';
-      }else{note.textContent='Поставлено ферзей: '+queens.length+' из 4.';}
-    }
-    render();
-    body.appendChild(board);body.appendChild(note);
+  }else if(def.type==='sea3d'){
+    body.innerHTML='<div class="note">Морской бой — 3D доска на острове. Подойдите к синим блокам и кликайте по ним, чтобы стрелять.</div>';
+  }else if(def.type==='chess3d'){
+    body.innerHTML='<div class="note">Сказочные шахматы — 3D доска на острове. Подойдите к клеткам и кликайте, чтобы ставить/убирать ферзей (4 ферзя без конфликтов).</div>';
   }else{
     const quiz=def.quiz;
     let qi=0,qscore=0;
@@ -1374,6 +1421,8 @@ document.getElementById('restart').addEventListener('click',()=>{
   chests.forEach(c=>{c.userData.opened=false;c.userData.lid.setLocalPosition(0,0.55,0);c.userData.lid.setLocalEulerAngles(0,0,0);});
   bridges.forEach(b=>{if(b.req){b.locked=true;if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);}});
   guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;g.userData.stage=0;});
+  chessCells.forEach(c=>{c.userData.queen=false;const q=c.children.find(x=>x.userData&&x.userData.isQueen);if(q)c.removeChild(q);});
+  seaCells.forEach(c=>{c.userData.revealed=false;c.render.material=blueMat;});
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
   toast('Игра начата заново.');
