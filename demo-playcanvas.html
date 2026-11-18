@@ -251,6 +251,7 @@ const darkStone=mat([0.35,0.35,0.38]);
 const dirtMat=mat([0.55,0.4,0.25]);
 const woodMat=mat([0.55,0.4,0.25]);
 const grassMat=mat([0.45,0.65,0.3]);
+const lightGreen=mat([0.55,0.8,0.4]);
 const leafMat=mat([0.3,0.55,0.25]);
 const trunkMat=mat([0.4,0.3,0.2]);
 const cloudMat=mat([0.95,0.95,0.95]);
@@ -274,7 +275,6 @@ sun.setLocalPosition(90,55,-90);
 sun.setLocalScale(10,10,10);
 world.addChild(sun);
 
-// 12 локаций — все разделы презентации
 const LOCS=[
  {id:'intro',name:'Остров Начал',
   letter:'📖 Введение. Одаренность — системное качество психики, которое развивается в течение жизни. Риски: гипердиагностика и пропуск детей. В отечественной традиции (Богоявленская) одаренность — не статичный набор способностей.',
@@ -425,7 +425,7 @@ for(let x=-50;x<50;x++){
       if(isTop){
         const rnd=Math.random();
         if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
-        else if(rnd<0.15)m=goldMat;
+        else if(rnd<0.15)m=lightGreen;
         else m=grassMat;
       }else{
         m=dirtMat;
@@ -450,12 +450,6 @@ for(let x=-50;x<50;x++){
           world.addChild(f);
         }
       }
-    }
-    const r=locRadius(l.id);
-    const dx=x-l.cx,dz=z-l.cz;
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if(dist>r-1.5&&Math.random()<0.15){
-      cube(x,top+1,z,Math.random()<0.5?goldMat:dirtMat);
     }
   }
 }
@@ -599,7 +593,6 @@ LOCS.forEach((l,i)=>{
   world.addChild(torch);
 });
 
-// Мини-игры: станции на островах
 const gameStations=[];
 const GAMES=[
  {id:'myth',title:'Миф или факт?',desc:'Отличите научный факт от распространенного заблуждения об одаренности.',
@@ -1095,7 +1088,6 @@ function openQuiz(guard){
   document.getElementById('npcModal').classList.add('show');
 }
 
-// Мини-игры
 function openGame(def){
   document.getElementById('gameTitle').textContent=def.title;
   document.getElementById('gameDesc').textContent=def.desc;
@@ -1129,7 +1121,6 @@ function openGame(def){
     const grid=document.createElement('div');grid.className='row';
     const options=document.createElement('div');options.className='row';
     const note=document.createElement('div');note.className='note';
-    // Простая матрица: 3 фигуры в строке, пропущена одна
     const correct=shapes[Math.floor(Math.random()*3)];
     const shown=shapes.filter(s=>s!==correct);
     grid.innerHTML=shown.map(s=>'<div class="cell">'+(s==='круг'?'●':s==='квадрат'?'■':'▲')+'</div>').join('')+'<div class="cell">?</div>';
@@ -1222,7 +1213,6 @@ function openGame(def){
     render();
     body.appendChild(board);body.appendChild(note);
   }else{
-    // Квиз-игры (myth, assoc, types)
     const quiz=def.quiz;
     let qi=0,qscore=0;
     const prog=document.createElement('div');prog.className='note';
@@ -1471,13 +1461,6 @@ app.on('update',dt=>{
     prompt.classList.remove('show');
     actionBtn.classList.remove('show');
   }
-  const clouds=[];
-  clouds.forEach(c=>{
-    const cp=c.e.getLocalPosition();
-    let nx=cp.x+c.speed*dt;
-    if(nx>55)nx=-55;
-    c.e.setLocalPosition(nx,cp.y,cp.z);
-  });
 });
 
 window.addEventListener('resize',()=>{
