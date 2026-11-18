@@ -75,6 +75,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
 .gameover p{margin:.3rem 0}
 .gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
+.mini{margin-top:.6rem;text-align:left}
+.mini .row{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin:.4rem 0}
+.mini .cell{width:34px;height:34px;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;font-size:18px}
+.mini .cell.hit{background:#b3573f;border-color:#ff8a80}
+.mini .cell.miss{background:rgba(255,255,255,.05);color:#999}
+.mini .cell.queen{background:#d9a441;color:#3f2c16}
+.mini .cell.bad{background:#b3573f}
+.mini input{padding:.4rem .6rem;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-family:inherit;font-size:.9rem;width:100%}
+.mini .note{font-size:.85rem;color:#ccc;margin:.4rem 0}
 @media(max-width:768px){
   .slot[data-slot="book"]{display:none}
   .panel{max-width:170px;font-size:.7rem;padding:.3rem .5rem}
@@ -115,9 +124,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Идите по цепочке островов. У каждого моста — стражник: прочитайте обелиск и пройдите испытание.</p>
-        <div class="quest"><span class="dot gold"></span><span>Испытаний пройдено: <span id="tasksDone">0</span>/9</span></div>
-        <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/9</p>
+        <p>Пройдите все локации: обелиск → стражник → мини-игра. Вся теория презентации — в игре.</p>
+        <div class="quest"><span class="dot gold"></span><span>Локаций пройдено: <span id="tasksDone">0</span>/<span id="tasksTotal">12</span></span></div>
+        <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/<span id="lettersTotal">12</span></p>
       </div>
     </div>
   </div>
@@ -143,8 +152,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук, поговорить со стражником, прочитать обелиск, сорвать яблоко или спуститься в шахту.</p>
-    <p>У каждого стражника — 2 задания: 1) прочитай обелиск в центре острова (знания раздела); 2) ответь на вопрос. Письмо-подсказка — необязательно, но помогает.</p>
+    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера. <b>ЛКМ / E</b> — действие.</p>
+    <p>На каждом острове: <b>обелиск</b> (теория раздела) → <b>стражник</b> (вопрос) → <b>мини-игра</b> (интерактив из презентации). Письма, сундуки, яблоки, шахты — бонусы.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -164,6 +173,14 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <button id="closeNpc">Закрыть</button>
   </div>
 </div>
+<div class="modal" id="gameModal">
+  <div class="box">
+    <h2 id="gameTitle"></h2>
+    <p id="gameDesc"></p>
+    <div class="mini" id="gameBody"></div>
+    <button id="closeGame">Закрыть</button>
+  </div>
+</div>
 <div class="modal" id="bookModal">
   <div class="box">
     <h2>Книга квестов</h2>
@@ -174,7 +191,6 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="inventoryModal">
   <div class="box">
     <h2>Инвентарь</h2>
-    <p style="font-size:.9rem;color:#ccc">Перетащите письмо на слот 📜 в хотбаре, чтобы читать его в любой момент.</p>
     <ul class="questlist" id="inventoryList"></ul>
     <button id="closeInventory">Закрыть</button>
   </div>
@@ -182,8 +198,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="finalModal">
   <div class="box">
     <h2>Курс пройден!</h2>
-    <p>Вы прошли все локации, изучили знания через обелиски и выполнили испытания.</p>
-    <p><b>Заключение:</b> диагностика одаренности — это не единичный акт измерения, а процесс, встроенный в образовательную практику.</p>
+    <p><b>Заключение:</b> диагностика одаренности — это процесс, а не акт измерения. Тесты дополняются наблюдением, анализом продуктов деятельности и экспертными оценками. Главный «диагност» — учитель, создающий среду, в которой способности могут проявиться.</p>
+    <p><b>Литература:</b> Рабочая концепция одаренности (Богоявленская, 2003); Ратнер, Губайдуллина (2014); Савенков (2018); Шумакова (2004); Шумакова и др. (1991); Дружинин (2007, 2026).</p>
     <button id="closeFinal">Продолжить</button>
   </div>
 </div>
@@ -246,6 +262,7 @@ const redMat=mat([0.8,0.2,0.2],[0.4,0.05,0.05]);
 const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
 const appleMat=mat([0.85,0.15,0.15],[0.4,0.05,0.05]);
+const gameMat=mat([0.5,0.7,0.9],[0.2,0.4,0.6]);
 const flowerMats=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95]),mat([0.6,0.4,0.8])];
 
 const world=new pc.Entity('world');
@@ -257,61 +274,77 @@ sun.setLocalPosition(90,55,-90);
 sun.setLocalScale(10,10,10);
 world.addChild(sun);
 
+// 12 локаций — все разделы презентации
 const LOCS=[
  {id:'intro',name:'Остров Начал',
-  hint:'Одаренность — системное качество психики, которое развивается. Не только IQ.',
-  letter:'📖 Знания раздела «Остров Начал»\n\nОпределение: одаренность — это системное качество психики, которое развивается в течение жизни.\n\nКлючевые идеи:\n- Диагностика помогает вовремя выявить потенциал.\n- История знает ошибки гипердиагностики и пропущенные случаи.\n- В отечественной традиции (Рабочая концепция Богоявленской) одаренность — не статичный набор способностей.\n\nПример: ребенок с высоким потенциалом может не показывать высоких результатов в тестах, если среда не поддерживает развитие.\n\nПодсказка: одаренность — это не только IQ.',
+  letter:'📖 Введение. Одаренность — системное качество психики, которое развивается в течение жизни. Риски: гипердиагностика и пропуск детей. В отечественной традиции (Богоявленская) одаренность — не статичный набор способностей.',
+  hint:'Одаренность — не статичное качество, а развивающееся системное свойство психики.',
   npc:{name:'Стражник Богоявленской',color:[0.6,0.45,0.85],
-  quiz:{q:'Что такое одаренность в Рабочей концепции Богоявленской?',opts:['Статичный набор высоких способностей','Системное качество психики, развивающееся в течение жизни','Только высокий IQ'],correct:1}}},
+  quiz:{q:'Одаренность — это статичное качество, данное раз и навсегда?',opts:['Миф','Факт'],correct:0}}},
  {id:'approaches',name:'Остров Подходов',
+  letter:'📖 Три подхода: психометрический (IQ, Векслер, Торренс, Амтхауэр), многомерный (Рензулли: способности+креативность+мотивация; Гарднер — множественные интеллекты), системный (Богоявленская: когнитивный, мотивационный, эмоциональный, волевой компоненты).',
   hint:'Ищи модель, где одаренность = способности + креативность + мотивация.',
-  letter:'📖 Знания раздела «Остров Подходов»\n\nОпределение: подходы к диагностике — способы понять и измерить одаренность.\n\nКлючевые идеи:\n- Психометрический подход: IQ, тесты Векслера, Торренса, Амтхауэра.\n- Многомерный подход: трехкольцевая модель Рензулли (способности + креативность + мотивация).\n- Системный подход: когнитивный, мотивационный, эмоциональный и волевой компоненты.\n\nПример: ребенок с высоким IQ, но низкой мотивацией может не проявить одаренность в деятельности.\n\nПодсказка: ищи модель, где одаренность = способности + креативность + мотивация.',
   npc:{name:'Стражник Рензулли',color:[0.3,0.6,0.8],
   quiz:{q:'Какой подход описывает одаренность как пересечение способностей, креативности и мотивации?',opts:['Психометрический','Многомерный (Рензулли)','Системный'],correct:1}}},
  {id:'factors',name:'Остров Факторов',
+  letter:'📖 Факторы диагностики: возрастная динамика, социокультурный контекст, скрытая одаренность и «двойная исключительность» (СДВГ, дислексия), барьеры (перфекционизм, страх неудачи), субъективность экспертов.',
   hint:'Что может маскировать одаренность? СДВГ, дислексия...',
-  letter:'📖 Знания раздела «Остров Факторов»\n\nОпределение: факторы диагностики — условия, которые влияют на выявление одаренности.\n\nКлючевые идеи:\n- Возрастная динамика: одаренность проявляется неравномерно.\n- Социокультурный контекст: тесты могут быть культурно-специфичными.\n- Скрытая одаренность и «двойная исключительность»: СДВГ, дислексия могут маскировать способности.\n- Барьеры: трудности коммуникации, перфекционизм, страх неудачи.\n\nПример: ребенок с дислексией может иметь высокий творческий потенциал, но низкие результаты в стандартных тестах.\n\nПодсказка: ищи, что может маскировать способности ребенка.',
   npc:{name:'Стражник Шумаковой',color:[0.4,0.7,0.4],
   quiz:{q:'Что может маскировать одаренность ребенка?',opts:['Высокая мотивация','СДВГ и дислексия','Богатая среда'],correct:1}}},
  {id:'herzen',name:'Остров Герценовцев',
+  letter:'📖 Вклад РГПУ: Савенков — интеллектуально-творческий потенциал, познавательная активность; Шумакова — скрытая одаренность, возрастная динамика; Баева — психологически безопасная среда; Дружинин — интеллект и креативность.',
   hint:'Кто разработал модель интеллектуально-творческого потенциала?',
-  letter:'📖 Знания раздела «Остров Герценовцев»\n\nОпределение: интеллектуально-творческий потенциал — сочетание когнитивного, мотивационного и креативного компонентов.\n\nКлючевые идеи:\n- А.И. Савенков: ключевой критерий — познавательная активность в естественной среде.\n- Н.Б. Шумакова: скрытая одаренность и возрастная динамика.\n- И.А. Баева: психологически безопасная среда — условие развития.\n- В.Н. Дружинин: соотношение интеллекта и креативности.\n\nПример: ребенок, который сам задает вопросы и ищет ответы, проявляет познавательную активность.\n\nПодсказка: ищи, кто разработал модель интеллектуально-творческого потенциала.',
   npc:{name:'Стражник Савенкова',color:[0.9,0.55,0.3],
   quiz:{q:'Кто разработал модель интеллектуально-творческого потенциала?',opts:['Д.Б. Богоявленская','А.И. Савенков','Дж. Рензулли'],correct:1}}},
- {id:'city',name:'Город Методик',
+ {id:'creative',name:'Остров Креативного Поля',
+  letter:'📖 Метод «Креативное поле» (Богоявленская): диагностирует способность развивать деятельность по собственной инициативе. Уровни: стимульно-продуктивный и эвристический. Модификации: «Звери в цирке», «Морской бой», «Сказочные шахматы».',
   hint:'Что диагностирует метод «Креативное поле»?',
-  letter:'📖 Знания раздела «Город Методик»\n\nОпределение: метод «Креативное поле» — способ диагностики творческих способностей через деятельность.\n\nКлючевые идеи:\n- Д.Б. Богоявленская: диагностирует не результат, а способность развивать деятельность по собственной инициативе.\n- Уровни: стимульно-продуктивный и эвристический.\n- Модификации: «Звери в цирке», «Морской бой», «Сказочные шахматы».\n\nПример: ребенок, который после решения задачи начинает искать другие способы, проявляет эвристический уровень.\n\nПодсказка: ищи, что диагностирует метод «Креативное поле».',
   npc:{name:'Стражник Богоявленской',color:[0.8,0.3,0.3],
   quiz:{q:'Что диагностирует метод «Креативное поле»?',opts:['Только результат решения задачи','Способность развивать деятельность по собственной инициативе','Скорость чтения'],correct:1}}},
- {id:'dungeon1',name:'Подземелье Савенкова',
+ {id:'savenkov',name:'Остров Савенкова',
+  letter:'📖 Методики Савенкова: «Карта одаренности» (склонности по сферам), «Методика оценки общей одаренности» (9 характеристик), «Оценка интересов младших школьников» (интересы по сферам).',
   hint:'Какая методика Савенкова оценивает склонности по сферам?',
-  letter:'📖 Знания раздела «Подземелье Савенкова»\n\nОпределение: методики Савенкова — инструменты для оценки склонностей и одаренности.\n\nКлючевые идеи:\n- «Карта одаренности»: оценка по сферам (интеллектуальная, творческая, академическая и др.).\n- «Методика оценки общей одаренности»: 9 характеристик.\n- «Методика оценки интересов младших школьников»: интересы по сферам.\n\nПример: ребенок с высоким интересом к математике и технике может иметь техническую одаренность.\n\nПодсказка: ищи, какая методика Савенкова оценивает склонности по сферам.',
   npc:{name:'Стражник Савенкова',color:[0.5,0.5,0.55],
   quiz:{q:'Какая методика Савенкова оценивает склонности по сферам?',opts:['Карта одаренности','Шкалы Векслера','Тест Торренса'],correct:0}}},
- {id:'dungeon2',name:'Подземелье Шумаковой',
+ {id:'shumakova',name:'Остров Шумаковой',
+  letter:'📖 ОВК Шумаковой: вербальная часть (завершение предложений, рассказы, необычное использование) и образная (дорисовывание фигур). Критерии: беглость, гибкость, оригинальность, разработанность.',
   hint:'Какие критерии оценивает ОВК?',
-  letter:'📖 Знания раздела «Подземелье Шумаковой»\n\nОпределение: ОВК (Образная и вербальная креативность) — методика для выявления творческого потенциала.\n\nКлючевые идеи:\n- Вербальная часть: завершение предложений, рассказы, необычное использование предметов.\n- Образная часть: дорисовывание фигур.\n- Критерии: беглость, гибкость, оригинальность, разработанность.\n\nПример: ребенок, который придумывает много разных способов использования предмета, показывает высокую гибкость.\n\nПодсказка: ищи критерии креативности в письме.',
   npc:{name:'Стражник Шумаковой',color:[0.6,0.45,0.85],
   quiz:{q:'Какие критерии оценивает ОВК Шумаковой?',opts:['Беглость, гибкость, оригинальность, разработанность','Только IQ','Только память'],correct:0}}},
  {id:'tests',name:'Остров Тестов',
+  letter:'📖 Психометрический инструментарий: Векслер (вербальные и невербальные субтесты, IQ), Равен (матрицы, закономерности), Амтхауэр (аналогии, обобщение, память, пространство), ШТУР. Тесты креативности: Гилфорд, Торренс, Медник.',
   hint:'Какой тест измеряет IQ через субтесты?',
-  letter:'📖 Знания раздела «Остров Тестов»\n\nОпределение: тесты интеллекта и креативности — инструменты для измерения способностей.\n\nКлючевые идеи:\n- Шкалы Векслера: вербальные и невербальные субтесты, общий IQ.\n- Матрицы Равена: закономерности и логика.\n- Тест Амтхауэра: аналогии, обобщение, память, пространство.\n- Тесты креативности: Гилфорд, Торренс, Медник.\n\nПример: ребенок с высоким IQ по Векслеру может иметь высокие академические способности.\n\nПодсказка: ищи, какой тест измеряет IQ через вербальные и невербальные субтесты.',
   npc:{name:'Стражник Дружинина',color:[0.3,0.6,0.8],
   quiz:{q:'Какой тест измеряет IQ через вербальные и невербальные субтесты?',opts:['Шкалы Векслера','Тест Медника','Опросник Лосевой'],correct:0}}},
- {id:'final',name:'Остров Итогов',
+ {id:'loseva',name:'Остров Лосевой',
+  letter:'📖 Опросник Лосевой: 10 сфер (интеллектуальная, академическая, творческая, литературная, артистическая, музыкальная, техническая, двигательная, художественная, социальная). Главное для педагога — наблюдение и создание развивающей среды.',
   hint:'Что главное в педагогической диагностике?',
-  letter:'📖 Знания раздела «Остров Итогов»\n\nОпределение: педагогическая диагностика — процесс выявления и поддержки одаренности в образовательной практике.\n\nКлючевые идеи:\n- Опросник А.А. Лосевой: 10 сфер.\n- Главное для педагога: наблюдение и создание развивающей среды.\n- ИИ: помощник, а не замена педагога.\n\nПример: учитель, который замечает интерес ребенка к проектам и дает ему возможность развиваться, поддерживает одаренность.\n\nПодсказка: что главное в педагогической диагностике одаренности?',
   npc:{name:'Стражник Лосевой',color:[0.9,0.55,0.3],
-  quiz:{q:'Что главное в педагогической диагностике одаренности?',opts:['Только тесты','Наблюдение и создание развивающей среды','Только оценки родителей'],correct:1}}}
+  quiz:{q:'Что главное в педагогической диагностике одаренности?',opts:['Только тесты','Наблюдение и создание развивающей среды','Только оценки родителей'],correct:1}}},
+ {id:'ai',name:'Остров ИИ',
+  letter:'📖 Роль ИИ: возможности (анализ больших данных, автоматизированная оценка, адаптивное тестирование) и риски (социокультурные смещения, отсутствие понимания контекста, редукция одаренности). ИИ — помощник, а не замена педагога.',
+  hint:'ИИ — помощник или замена педагога?',
+  npc:{name:'Стражник ИИ',color:[0.5,0.7,0.9],
+  quiz:{q:'Какова роль ИИ в диагностике одаренности?',opts:['Полная замена педагога','Вспомогательный инструмент','Не нужен вовсе'],correct:1}}},
+ {id:'conclusion',name:'Остров Итогов',
+  letter:'📖 Заключение: диагностика — процесс, а не акт измерения. Инструменты, чувствительные к скрытому: «Креативное поле», методики Савенкова, ОВК Шумаковой. Главный «диагност» — учитель. От сортировки — к траекториям.',
+  hint:'Диагностика — это процесс или акт измерения?',
+  npc:{name:'Стражник Итогов',color:[0.7,0.6,0.4],
+  quiz:{q:'Диагностика одаренности — это...',opts:['Единичный акт измерения','Процесс, встроенный в образовательную практику','Только тестирование'],correct:1}}},
+ {id:'biblio',name:'Остров Литературы',
+  letter:'📖 Литература: Рабочая концепция одаренности (Богоявленская, 2003); Ратнер, Губайдуллина (2014); Савенков (2018); Шумакова (2004); Шумакова и др. (1991); Дружинин (2007, 2026).',
+  hint:'Кто автор «Рабочей концепции одаренности»?',
+  npc:{name:'Стражник Библиотеки',color:[0.8,0.7,0.5],
+  quiz:{q:'Кто автор «Рабочей концепции одаренности»?',opts:['Д.Б. Богоявленская','А.И. Савенков','Дж. Рензулли'],correct:0}}}
 ];
-const RING=34;
-const ringAngles=[0,40,80,120,160,200,240,280,320];
+const RING=40;
+const ringAngles=[0,30,60,90,120,150,180,210,240,270,300,330];
 LOCS.forEach((l,i)=>{
   const a=ringAngles[i]*Math.PI/180;
   l.cx=Math.round(RING*Math.sin(a));
   l.cz=Math.round(RING*Math.cos(a));
 });
-function locRadius(id){return id==='city'?10:(id==='dungeon1'||id==='dungeon2')?7:9;}
+function locRadius(id){return 8;}
 const BASE=8;
 const MINE_Y=BASE-7;
 function locTop(x,z){
@@ -319,7 +352,7 @@ function locTop(x,z){
     const r=locRadius(l.id);
     const dx=x-l.cx,dz=z-l.cz;
     if(dx*dx+dz*dz<=r*r){
-      const hill=(l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2')?Math.max(0,Math.round(Math.sin(x*0.4)+Math.cos(z*0.4))):0;
+      const hill=Math.max(0,Math.round(Math.sin(x*0.4)+Math.cos(z*0.4)));
       return BASE+hill;
     }
   }
@@ -372,6 +405,7 @@ LOCS.forEach((l,i)=>{
   const ux=dx/len,uz=dz/len;
   l.guardPos={x:Math.round(l.cx+ux*(r-3)),z:Math.round(l.cz+uz*(r-3))};
   l.minePos={x:l.cx+3,z:l.cz+3};
+  l.gamePos={x:l.cx-3,z:l.cz+3};
   l.oreSpots=[];
   for(let k=0;k<4;k++){
     const oa=k*Math.PI/2+Math.random()*0.5;
@@ -380,25 +414,21 @@ LOCS.forEach((l,i)=>{
   }
 });
 
-for(let x=-45;x<45;x++){
-  for(let z=-45;z<45;z++){
+for(let x=-50;x<50;x++){
+  for(let z=-50;z<50;z++){
     const l=locAt(x,z);
     if(!l)continue;
     const top=locTop(x,z);
     for(let y=BASE-5;y<=top;y++){
       const isTop=(y===top);
       let m;
-      if(l.id==='dungeon1'||l.id==='dungeon2'){
-        m=darkStone;
+      if(isTop){
+        const rnd=Math.random();
+        if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
+        else if(rnd<0.15)m=goldMat;
+        else m=grassMat;
       }else{
-        if(isTop){
-          const rnd=Math.random();
-          if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
-          else if(rnd<0.15)m=goldMat;
-          else m=grassMat;
-        }else{
-          m=dirtMat;
-        }
+        m=dirtMat;
       }
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
@@ -487,60 +517,6 @@ LOCS.forEach(l=>{
   }
 });
 
-function house(x,z){
-  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
-    cube(x+dx,BASE,z+dz,stoneMat);
-  }
-  for(let dy=1;dy<=3;dy++){
-    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
-      if(Math.abs(dx)===1||Math.abs(dz)===1){
-        cube(x+dx,BASE+dy,z+dz,dy===2&&dx===0?woodMat:darkStone);
-      }
-    }
-  }
-  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
-    cube(x+dx,BASE+4,z+dz,dirtMat);
-  }
-}
-const cityLoc=LOCS.find(l=>l.id==='city');
-house(cityLoc.cx-4,cityLoc.cz-4);house(cityLoc.cx+4,cityLoc.cz-4);house(cityLoc.cx,cityLoc.cz+5);
-const wellX=cityLoc.cx+3,wellZ=cityLoc.cz+3;
-for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
-  if(Math.abs(dx)===1||Math.abs(dz)===1){
-    cube(wellX+dx,BASE+1,wellZ+dz,stoneMat);
-  }
-}
-cube(wellX,BASE+1,wellZ,blueMat);
-cube(wellX-1,BASE+3,wellZ,dirtMat);
-cube(wellX+1,BASE+3,wellZ,dirtMat);
-cube(wellX,BASE+3,wellZ,dirtMat);
-
-LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
-  const r=7;
-  for(let x=l.cx-r;x<=l.cx+r;x++){
-    for(let z=l.cz-r;z<=l.cz+r;z++){
-      const dx=x-l.cx,dz=z-l.cz;
-      const dist=Math.sqrt(dx*dx+dz*dz);
-      if(dist>r-1&&dist<=r){
-        cube(x,BASE+1,z,darkStone);
-        cube(x,BASE+2,z,darkStone);
-      }
-    }
-  }
-  for(let i=0;i<3;i++){
-    const a=Math.random()*Math.PI*2;
-    const rr=2+Math.random()*(r-3);
-    const x=Math.round(l.cx+Math.cos(a)*rr);
-    const z=Math.round(l.cz+Math.sin(a)*rr);
-    const g=new pc.Entity('torch');
-    const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
-    const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:12});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
-    g.setLocalPosition(x,BASE+0.5,z);
-    world.addChild(g);
-  }
-});
-
 const apples=[];
 function voxelTree(x,z,leafM){
   const top=groundTop(x,z);
@@ -565,8 +541,8 @@ function voxelTree(x,z,leafM){
     apples.push(ap);
   }
 }
-LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
-  for(let i=0;i<6;i++){
+LOCS.forEach(l=>{
+  for(let i=0;i<5;i++){
     const a=Math.random()*Math.PI*2;
     const r=3+Math.random()*(locRadius(l.id)-4);
     const x=Math.round(l.cx+Math.cos(a)*r);
@@ -576,7 +552,8 @@ LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const nearLetter=Math.hypot(x-(l.cx+2),z-l.cz)<2;
     const nearChest=Math.hypot(x-l.chestPos.x,z-l.chestPos.z)<2;
     const nearMine=Math.hypot(x-l.minePos.x,z-l.minePos.z)<3;
-    if(nearCenter||nearGuard||nearLetter||nearChest||nearMine)continue;
+    const nearGame=Math.hypot(x-l.gamePos.x,z-l.gamePos.z)<3;
+    if(nearCenter||nearGuard||nearLetter||nearChest||nearMine||nearGame)continue;
     voxelTree(x,z,leafMat);
   }
 });
@@ -622,72 +599,47 @@ LOCS.forEach((l,i)=>{
   world.addChild(torch);
 });
 
-LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
-  const r=locRadius(l.id);
-  for(let i=0;i<5;i++){
-    const a=Math.random()*Math.PI*2;
-    const rr=3+Math.random()*(r-3);
-    const x=Math.round(l.cx+Math.cos(a)*rr);
-    const z=Math.round(l.cz+Math.sin(a)*rr);
-    const top=groundTop(x,z);
-    if(top==null)continue;
-    const b=new pc.Entity('bush');
-    b.addComponent('render',{type:'box',material:leafMat});
-    b.setLocalPosition(x,top+0.3,z);
-    b.setLocalScale(0.7,0.5,0.7);
-    world.addChild(b);
-  }
-  for(let i=0;i<3;i++){
-    const a=Math.random()*Math.PI*2;
-    const rr=3+Math.random()*(r-3);
-    const x=Math.round(l.cx+Math.cos(a)*rr);
-    const z=Math.round(l.cz+Math.sin(a)*rr);
-    const top=groundTop(x,z);
-    if(top==null)continue;
-    const g=new pc.Entity('lamp');
-    const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
-    const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.2,range:10});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
-    g.setLocalPosition(x,top+0.5,z);
-    world.addChild(g);
-  }
-  for(let i=0;i<3;i++){
-    const a=Math.random()*Math.PI*2;
-    const rr=3+Math.random()*(r-3);
-    const x=Math.round(l.cx+Math.cos(a)*rr);
-    const z=Math.round(l.cz+Math.sin(a)*rr);
-    const top=groundTop(x,z);
-    if(top==null)continue;
-    const c=new pc.Entity('crate');
-    c.addComponent('render',{type:'box',material:woodMat});
-    c.setLocalPosition(x,top+0.3,z);
-    c.setLocalScale(0.7,0.6,0.7);
-    world.addChild(c);
-  }
-  for(let i=0;i<4;i++){
-    const a=Math.random()*Math.PI*2;
-    const rr=3+Math.random()*(r-3);
-    const x=Math.round(l.cx+Math.cos(a)*rr);
-    const z=Math.round(l.cz+Math.sin(a)*rr);
-    const top=groundTop(x,z);
-    if(top==null)continue;
-    const rock=new pc.Entity('rock');
-    rock.addComponent('render',{type:'box',material:stoneMat});
-    rock.setLocalPosition(x,top+0.35,z);
-    rock.setLocalScale(0.5+Math.random()*0.3,0.3+Math.random()*0.2,0.5+Math.random()*0.3);
-    world.addChild(rock);
-  }
+// Мини-игры: станции на островах
+const gameStations=[];
+const GAMES=[
+ {id:'myth',title:'Миф или факт?',desc:'Отличите научный факт от распространенного заблуждения об одаренности.',
+  quiz:[
+   {q:'Высокий IQ гарантирует высокие творческие способности?',opts:['Миф','Факт'],correct:0,note:'Дружинин: связь интеллекта и креативности нелинейна.'},
+   {q:'Часть одаренных детей не проявляет способностей в школьных условиях?',opts:['Миф','Факт'],correct:1,note:'Это скрытая одаренность и «двойная исключительность».'},
+   {q:'Тесты интеллекта в равной мере подходят детям из разных социокультурных сред?',opts:['Миф','Факт'],correct:0,note:'Тесты разработаны в западной традиции, есть культурные смещения.'}
+  ]},
+ {id:'invent',title:'Нестандартное применение',desc:'За 60 секунд придумайте как можно больше способов использовать предмет. Оцениваются беглость и оригинальность.',type:'invent'},
+ {id:'raven',title:'Матрицы Равена',desc:'Найдите недостающий элемент по закономерности.',type:'raven'},
+ {id:'assoc',title:'Ассоциативные тройки',desc:'Найдите слово, которое связывает все три слова тройки (тест Медника).',
+  quiz:[
+   {q:'телефон · дверь · школа — что их объединяет?',opts:['звонок','ключ','провод'],correct:0,note:'Телефонный, дверной, школьный звонок.'},
+   {q:'гриб · стул · стол — что их объединяет?',opts:['ножка','крышка','спинка'],correct:0,note:'Ножка гриба, стула, стола.'},
+   {q:'язык · нож · перец — что их объединяет?',opts:['острый','длинный','красный'],correct:0,note:'Острый язык, нож, перец.'}
+  ]},
+ {id:'types',title:'Виды одаренности',desc:'Определите сферу одаренности по описанию поведения.',
+  quiz:[
+   {q:'Ребенок любит головоломки, быстро считает в уме, спрашивает «почему?». Сфера?',opts:['Интеллектуальная','Артистическая','Двигательная'],correct:0,note:'Интеллектуальная сфера.'},
+   {q:'Ребенок сочиняет истории, чувствует ритм и точное слово. Сфера?',opts:['Литературная','Музыкальная','Техническая'],correct:0,note:'Литературная сфера.'},
+   {q:'Ребенок мирит друзей, легко организует совместную игру. Сфера?',opts:['Социальная','Художественная','Академическая'],correct:0,note:'Социальная сфера.'}
+  ]},
+ {id:'circus',title:'Звери в цирке',desc:'Запомните зверей, затем найдите того, кто исчез.',type:'circus'},
+ {id:'sea',title:'Морской бой',desc:'Найдите все корабли: один из 3 клеток, два из 2, два из 1.',type:'sea'},
+ {id:'chess',title:'Сказочные шахматы',desc:'Расставьте 4 ферзя так, чтобы ни один не атаковал другого.',type:'chess'}
+];
+LOCS.forEach((l,i)=>{
+  const gp=l.gamePos;
+  const top=groundTop(gp.x,gp.z);
+  if(top==null)return;
+  const g=new pc.Entity('game_'+i);
+  const base=new pc.Entity();base.addComponent('render',{type:'box',material:gameMat});base.setLocalPosition(0,0.3,0);base.setLocalScale(1.2,0.6,1.2);g.addChild(base);
+  const icon=new pc.Entity();icon.addComponent('render',{type:'box',material:goldMat});icon.setLocalPosition(0,0.9,0);icon.setLocalScale(0.4,0.4,0.4);g.addChild(icon);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(0.5,0.7,1),intensity:1.5,range:10});pl.setLocalPosition(0,1.2,0);g.addChild(pl);
+  g.setLocalPosition(gp.x,top+0.5,gp.z);
+  const game=GAMES[i%GAMES.length];
+  g.userData={game:true,gameId:game.id,gameDef:game,alive:true};
+  world.addChild(g);
+  gameStations.push(g);
 });
-
-const clouds=[];
-for(let i=0;i<10;i++){
-  const c=new pc.Entity('cloud');
-  c.addComponent('render',{type:'box',material:cloudMat});
-  c.setLocalPosition((Math.random()-0.5)*100,0+Math.random()*2,(Math.random()-0.5)*100);
-  c.setLocalScale(6+Math.random()*4,0.5,3+Math.random()*2);
-  world.addChild(c);
-  clouds.push({e:c,speed:0.4+Math.random()*0.6});
-}
 
 const letterBlocks=[];
 LOCS.forEach((l,i)=>{
@@ -704,7 +656,7 @@ LOCS.forEach((l,i)=>{
 });
 
 const beacons=[];
-function addBeacon(l,i){
+LOCS.forEach((l,i)=>{
   const top=groundTop(l.cx,l.cz);
   const b=new pc.Entity('beacon_'+i);
   const base=new pc.Entity();base.addComponent('render',{type:'box',material:darkStone});base.setLocalPosition(0,0.15,0);base.setLocalScale(1.2,0.3,1.2);b.addChild(base);
@@ -720,8 +672,7 @@ function addBeacon(l,i){
   b.userData={beacon:true,loc:i,alive:true};
   world.addChild(b);
   beacons.push(b);
-}
-LOCS.forEach((l,i)=>addBeacon(l,i));
+});
 
 const chests=[];
 function addChestAt(l,p){
@@ -735,14 +686,12 @@ function addChestAt(l,p){
   world.addChild(g);
   chests.push(g);
 }
-function addChest(l){
+LOCS.forEach(l=>{
   addChestAt(l,l.chestPos);
   const a=Math.random()*Math.PI*2;
   const rr=3+Math.random()*(locRadius(l.id)-4);
-  const p2={x:Math.round(l.cx+Math.cos(a)*rr),z:Math.round(l.cz+Math.sin(a)*rr)};
-  addChestAt(l,p2);
-}
-LOCS.forEach(addChest);
+  addChestAt(l,{x:Math.round(l.cx+Math.cos(a)*rr),z:Math.round(l.cz+Math.sin(a)*rr)});
+});
 
 const guards=[];
 LOCS.forEach((l,i)=>{
@@ -770,16 +719,6 @@ LOCS.forEach((l,i)=>{
   g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0},marker:marker,stage:0};
   world.addChild(g);
   guards.push(g);
-  const pole=new pc.Entity('bannerpole');
-  pole.addComponent('render',{type:'box',material:trunkMat});
-  pole.setLocalPosition(gx+1,top+1.5,gz+1);
-  pole.setLocalScale(0.15,3,0.15);
-  world.addChild(pole);
-  const flag=new pc.Entity('bannerflag');
-  flag.addComponent('render',{type:'box',material:goldMat});
-  flag.setLocalPosition(gx+1.5,top+2.5,gz+1);
-  flag.setLocalScale(0.8,0.5,0.05);
-  world.addChild(flag);
 });
 
 const types=[
@@ -794,7 +733,7 @@ const questTypes=['gold','blue','purple','green'];
 let questType='gold';
 let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
 const tasks={};
-for(let i=1;i<=9;i++)tasks['t'+i]=false;
+for(let i=1;i<=12;i++)tasks['t'+i]=false;
 const ores=[];
 const inventory={gold:0,blue:0,purple:0,green:0,red:0};
 const collectedLetters=[];
@@ -837,10 +776,10 @@ function unlockBridges(req){
   });
 }
 function tasksDoneCount(){
-  let n=0;for(let i=1;i<=9;i++)if(tasks['t'+i])n++;return n;
+  let n=0;for(let i=1;i<=12;i++)if(tasks['t'+i])n++;return n;
 }
 
-const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: прочитай обелиск и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
+const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: обелиск → стражник → мини-игра.',done:()=>tasks['t'+(i+1)]}));
 function renderQuests(){
   const ul=document.getElementById('questList');
   ul.innerHTML='';
@@ -869,6 +808,8 @@ function updateHUD(){
   document.getElementById('lettersCount').textContent=collectedLetters.length;
   document.getElementById('letterSlotCount').textContent=collectedLetters.length;
   document.getElementById('tasksDone').textContent=tasksDoneCount();
+  document.getElementById('tasksTotal').textContent=12;
+  document.getElementById('lettersTotal').textContent=12;
   renderHearts();
 }
 updateHUD();
@@ -917,14 +858,6 @@ function isBlocked(x,z,curTop){
   const t=groundTop(x,z);
   if(t==null)return true;
   if(t-curTop>1)return true;
-  for(const l of LOCS){
-    if(l.id==='dungeon1'||l.id==='dungeon2'){
-      const dx=x-l.cx,dz=z-l.cz;
-      const dist=Math.sqrt(dx*dx+dz*dz);
-      const r=7;
-      if(dist>r-1.2&&dist<=r+0.2)return true;
-    }
-  }
   return false;
 }
 
@@ -1007,7 +940,8 @@ function mineAt(cx,cy){
   beacons.forEach(check);
   mineEntrances.forEach(check);
   apples.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки и шахты.');return;}
+  gameStations.forEach(check);
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты и мини-игры.');return;}
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -1034,9 +968,12 @@ function mineAt(cx,cy){
     updateHUD();
     return;
   }
+  if(best.userData.game){
+    openGame(best.userData.gameDef);
+    return;
+  }
   if(best.userData.mine){
     const l=LOCS[best.userData.loc];
-    const p=player.getLocalPosition();
     if(best.userData.underground){
       player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
       toast('Вы поднялись на поверхность.');
@@ -1103,7 +1040,7 @@ function interactGuard(g){
   const u=g.userData;
   if(u.stage===0){
     document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание: подойди к обелиску в центре острова и нажми на него (клик) или E, чтобы прочитать знания раздела. Потом возвращайся ко мне.';
+    document.getElementById('npcText').textContent='Задание 1: прочитай обелиск в центре острова. Задание 2: пройди мини-игру на станции рядом. Потом возвращайся ко мне.';
     document.getElementById('quizQ').textContent='';
     document.getElementById('quizOpts').innerHTML='';
     document.getElementById('npcModal').classList.add('show');
@@ -1116,7 +1053,7 @@ function openQuiz(guard){
   const l=LOCS[guard.userData.loc];
   const q=l.npc.quiz;
   document.getElementById('npcName').textContent=l.npc.name;
-  document.getElementById('npcText').textContent='Ты изучил знания через обелиск. Теперь ответь на вопрос — и я пропущу тебя.';
+  document.getElementById('npcText').textContent='Ты изучил знания через обелиск и мини-игру. Теперь ответь на вопрос — и я пропущу тебя.';
   document.getElementById('quizQ').textContent=q.q;
   const opts=document.getElementById('quizOpts');
   opts.innerHTML='';
@@ -1132,7 +1069,7 @@ function openQuiz(guard){
         guard.userData.passed=true;
         toast('Испытание пройдено! Стражник пропускает вас.');
         updateHUD();
-        if(idx===9){
+        if(idx===12){
           setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
         }
       }else{
@@ -1158,6 +1095,161 @@ function openQuiz(guard){
   document.getElementById('npcModal').classList.add('show');
 }
 
+// Мини-игры
+function openGame(def){
+  document.getElementById('gameTitle').textContent=def.title;
+  document.getElementById('gameDesc').textContent=def.desc;
+  const body=document.getElementById('gameBody');
+  body.innerHTML='';
+  if(def.type==='invent'){
+    const input=document.createElement('input');input.placeholder='Введите идею и нажмите Enter...';
+    const list=document.createElement('div');list.className='note';
+    const stats=document.createElement('div');stats.className='note';
+    const ideas=[];
+    const objects=['скрепка','кирпич','газета','пластиковая бутылка','пуговица'];
+    const obj=objects[Math.floor(Math.random()*objects.length)];
+    const common={'скрепка':['бумаг','скреп','закладк','чист','зуб','открыв','провод','ёлоч','елоч','игрушк','ушк','ключ','игл','почист','царап'],'кирпич':['стро','дом','стен','подпер','пресс','гнёт','гнет','подставк','груз','двер'],'газета':['чит','застел','заверн','упаков','розжиг','костёр','костер','шляп','подстилк','обёрт','оберт'],'пластиковая бутылка':['воронк','ваз','сосуд','срез','полив','контейнер','кормушк','лодк','термос'],'пуговица':['застег','пришит','карман','пуговиц','украш','бус','счёт','счет','фишк']};
+    list.textContent='Объект: '+obj;
+    let timeLeft=60;
+    const timer=document.createElement('div');timer.className='note';timer.textContent='Время: 60';
+    body.appendChild(list);body.appendChild(timer);body.appendChild(input);body.appendChild(stats);
+    const iv=setInterval(()=>{timeLeft--;timer.textContent='Время: '+timeLeft;if(timeLeft<=0){clearInterval(iv);input.disabled=true;stats.textContent='Идей: '+ideas.length;}},1000);
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'&&input.value.trim()){
+        const v=input.value.trim();
+        const isCommon=(common[obj]||[]).some(s=>v.toLowerCase().includes(s));
+        ideas.push({text:v,original:!isCommon});
+        const li=document.createElement('div');li.className='note';li.textContent=(isCommon?'популярная: ':'оригинальная: ')+v;
+        body.insertBefore(li,stats);
+        input.value='';
+      }
+    });
+  }else if(def.type==='raven'){
+    const shapes=['круг','квадрат','треугольник'];
+    const grid=document.createElement('div');grid.className='row';
+    const options=document.createElement('div');options.className='row';
+    const note=document.createElement('div');note.className='note';
+    // Простая матрица: 3 фигуры в строке, пропущена одна
+    const correct=shapes[Math.floor(Math.random()*3)];
+    const shown=shapes.filter(s=>s!==correct);
+    grid.innerHTML=shown.map(s=>'<div class="cell">'+(s==='круг'?'●':s==='квадрат'?'■':'▲')+'</div>').join('')+'<div class="cell">?</div>';
+    const opts=[...shapes].sort(()=>Math.random()-0.5);
+    opts.forEach(s=>{
+      const b=document.createElement('div');b.className='cell';b.textContent=(s==='круг'?'●':s==='квадрат'?'■':'▲');
+      b.addEventListener('click',()=>{
+        if(s===correct){b.classList.add('queen');note.textContent='Верно! Не хватало: '+correct;}else{b.classList.add('bad');note.textContent='Не то. Правильно: '+correct;}
+      });
+      options.appendChild(b);
+    });
+    body.appendChild(grid);body.appendChild(options);body.appendChild(note);
+  }else if(def.type==='circus'){
+    const animals=['🦁','🐘','🐒','🦓','🦒','🐻','🦊','🐰','🐨','🐯'];
+    const row=document.createElement('div');row.className='row';
+    const options=document.createElement('div');options.className='row';
+    const note=document.createElement('div');note.className='note';
+    const round=[...animals].sort(()=>Math.random()-0.5).slice(0,5);
+    const hidden=round[Math.floor(Math.random()*round.length)];
+    row.innerHTML=round.map(a=>'<div class="cell">'+a+'</div>').join('');
+    note.textContent='Запомните зверей...';
+    body.appendChild(row);body.appendChild(options);body.appendChild(note);
+    setTimeout(()=>{
+      const shown=round.filter(a=>a!==hidden);
+      row.innerHTML=shown.map(a=>'<div class="cell">'+a+'</div>').join('');
+      note.textContent='Кто исчез?';
+      const answers=[hidden];
+      while(answers.length<4){const a=animals[Math.floor(Math.random()*animals.length)];if(!answers.includes(a))answers.push(a);}
+      answers.sort(()=>Math.random()-0.5);
+      answers.forEach(a=>{
+        const b=document.createElement('div');b.className='cell';b.textContent=a;
+        b.addEventListener('click',()=>{if(a===hidden){b.classList.add('queen');note.textContent='Верно! Это был '+hidden;}else{b.classList.add('bad');note.textContent='Не то. Исчез '+hidden;}});
+        options.appendChild(b);
+      });
+    },2500);
+  }else if(def.type==='sea'){
+    const size=7;
+    const board=document.createElement('div');board.className='row';
+    const note=document.createElement('div');note.className='note';
+    const ships=[];const sizes=[3,2,2,1,1];
+    sizes.forEach(len=>{
+      let placed=false;
+      while(!placed){
+        const horiz=Math.random()<0.5;
+        const r=Math.floor(Math.random()*size),c=Math.floor(Math.random()*size);
+        const cells=[];
+        for(let i=0;i<len;i++)cells.push({r:horiz?r:r+i,c:horiz?c+i:c});
+        if(cells.every(({r,c})=>r>=0&&r<size&&c>=0&&c<size&&!ships.some(s=>s.some(x=>Math.abs(x.r-r)<=1&&Math.abs(x.c-c)<=1)))){ships.push(cells);placed=true;}
+      }
+    });
+    let hits=0,shots=0;
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+      const cell=document.createElement('div');cell.className='cell';
+      cell.addEventListener('click',()=>{
+        if(cell.classList.contains('hit')||cell.classList.contains('miss'))return;
+        shots++;
+        const isShip=ships.some(s=>s.some(x=>x.r===r&&x.c===c));
+        if(isShip){cell.classList.add('hit');cell.textContent='💥';hits++;}else{cell.classList.add('miss');cell.textContent='•';}
+        note.textContent='Выстрелов: '+shots+'. Попаданий: '+hits+' из 8.';
+      });
+      board.appendChild(cell);
+    }
+    body.appendChild(board);body.appendChild(note);
+  }else if(def.type==='chess'){
+    const size=4;
+    const board=document.createElement('div');board.className='row';
+    const note=document.createElement('div');note.className='note';
+    const queens=[];
+    function render(){
+      board.innerHTML='';
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        const cell=document.createElement('div');cell.className='cell';
+        const q=queens.find(q=>q.r===r&&q.c===c);
+        if(q){cell.textContent='♛';cell.classList.add('queen');}
+        cell.addEventListener('click',()=>{
+          if(q){queens.splice(queens.indexOf(q),1);}else if(queens.length<4){queens.push({r,c});}
+          render();
+        });
+        board.appendChild(cell);
+      }
+      if(queens.length===4){
+        let conflict=false;
+        for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
+          const a=queens[i],b=queens[j];
+          if(a.r===b.r||a.c===b.c||Math.abs(a.r-b.r)===Math.abs(a.c-b.c))conflict=true;
+        }
+        note.textContent=conflict?'Ферзи атакуют друг друга.':'Отлично! Ни один ферзь не атакует другого.';
+      }else{note.textContent='Поставлено ферзей: '+queens.length+' из 4.';}
+    }
+    render();
+    body.appendChild(board);body.appendChild(note);
+  }else{
+    // Квиз-игры (myth, assoc, types)
+    const quiz=def.quiz;
+    let qi=0,qscore=0;
+    const prog=document.createElement('div');prog.className='note';
+    const q=document.createElement('div');q.className='note';
+    const opts=document.createElement('div');opts.className='row';
+    const note=document.createElement('div');note.className='note';
+    function render(){
+      const item=quiz[qi];
+      prog.textContent='Вопрос '+(qi+1)+' из '+quiz.length;
+      q.textContent=item.q;
+      opts.innerHTML='';note.textContent='';
+      item.opts.forEach((o,k)=>{
+        const b=document.createElement('div');b.className='cell';b.style.width='auto';b.style.padding='0.4rem 0.8rem';b.textContent=o;
+        b.addEventListener('click',()=>{
+          if(k===item.correct){b.classList.add('queen');qscore++;note.textContent=item.note||'Верно!';}else{b.classList.add('bad');note.textContent='Не то. '+(item.note||'');}
+        });
+        opts.appendChild(b);
+      });
+    }
+    render();
+    const next=document.createElement('button');next.textContent='Далее';
+    next.addEventListener('click',()=>{qi++;if(qi<quiz.length)render();else{prog.textContent='Результат: '+qscore+' из '+quiz.length;q.textContent='';opts.innerHTML='';note.textContent='Мини-игра пройдена!';}});
+    body.appendChild(prog);body.appendChild(q);body.appendChild(opts);body.appendChild(note);body.appendChild(next);
+  }
+  document.getElementById('gameModal').classList.add('show');
+}
+
 let near=null;
 function findNear(){
   const p=player.getLocalPosition();
@@ -1171,6 +1263,7 @@ function findNear(){
   guards.forEach(o=>check(o,3));
   beacons.forEach(o=>check(o,5));
   mineEntrances.forEach(o=>check(o,3));
+  gameStations.forEach(o=>check(o,3));
   return best;
 }
 function interact(){
@@ -1188,9 +1281,10 @@ function interact(){
         toast('Стражник: ты готов! Поговори со мной.');
       }
     });
+  }else if(near.userData.game){
+    openGame(near.userData.gameDef);
   }else if(near.userData.mine){
     const l=LOCS[near.userData.loc];
-    const p=player.getLocalPosition();
     if(near.userData.underground){
       player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
       toast('Вы поднялись на поверхность.');
@@ -1207,6 +1301,9 @@ function interact(){
 document.getElementById('actionBtn').addEventListener('click',interact);
 document.getElementById('closeNpc').addEventListener('click',()=>{
   document.getElementById('npcModal').classList.remove('show');
+});
+document.getElementById('closeGame').addEventListener('click',()=>{
+  document.getElementById('gameModal').classList.remove('show');
 });
 
 document.getElementById('bookSlot').addEventListener('click',()=>{
@@ -1226,43 +1323,23 @@ function renderInventory(){
     li.className='invItem';
     li.textContent='📜 Письмо: '+l.name;
     li.draggable=true;
-    li.addEventListener('dragstart',e=>{
-      e.dataTransfer.setData('text/plain',String(loc));
-    });
+    li.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',String(loc));});
     ul.appendChild(li);
   });
-  const oreItems=[
-    ['Золото',inventory.gold],
-    ['Кристаллы',inventory.blue],
-    ['Руны',inventory.purple],
-    ['Семена',inventory.green],
-    ['Опасные блоки',inventory.red]
-  ];
+  const oreItems=[['Золото',inventory.gold],['Кристаллы',inventory.blue],['Руны',inventory.purple],['Семена',inventory.green],['Опасные блоки',inventory.red]];
   oreItems.forEach(([name,count])=>{
-    const li=document.createElement('li');
-    li.className='invItem';
-    li.textContent=name+': '+count;
-    li.addEventListener('click',()=>{
-      toast(name+': '+count+' в инвентаре.');
-    });
+    const li=document.createElement('li');li.className='invItem';li.textContent=name+': '+count;
     ul.appendChild(li);
   });
-  const li2=document.createElement('li');
-  li2.className='invItem';
-  li2.textContent='Еда: '+food;
+  const li2=document.createElement('li');li2.className='invItem';li2.textContent='Еда: '+food;
   ul.appendChild(li2);
 }
 const letterSlot=document.getElementById('letterSlot');
-letterSlot.addEventListener('dragover',e=>{
-  e.preventDefault();
-});
+letterSlot.addEventListener('dragover',e=>{e.preventDefault();});
 letterSlot.addEventListener('drop',e=>{
   e.preventDefault();
   const loc=parseInt(e.dataTransfer.getData('text/plain'),10);
-  if(!isNaN(loc)&&collectedLetters.includes(loc)){
-    selectedLetter=loc;
-    toast('Письмо перемещено в хотбар. Нажмите 📜, чтобы прочитать.');
-  }
+  if(!isNaN(loc)&&collectedLetters.includes(loc)){selectedLetter=loc;toast('Письмо перемещено в хотбар.');}
 });
 letterSlot.addEventListener('click',()=>{
   if(selectedLetter!=null){
@@ -1270,9 +1347,7 @@ letterSlot.addEventListener('click',()=>{
     document.getElementById('letterTitle').textContent='Письмо: '+l.name;
     document.getElementById('letterText').textContent=l.letter;
     document.getElementById('letterModal').classList.add('show');
-  }else{
-    toast('Перетащите письмо из инвентаря (🎒) в этот слот.');
-  }
+  }else{toast('Перетащите письмо из инвентаря (🎒) в этот слот.');}
 });
 document.getElementById('backpackSlot').addEventListener('click',()=>{
   renderInventory();
@@ -1298,7 +1373,7 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 
 document.getElementById('restart').addEventListener('click',()=>{
   hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;
-  for(let i=1;i<=9;i++)tasks['t'+i]=false;
+  for(let i=1;i<=12;i++)tasks['t'+i]=false;
   inventory.gold=0;inventory.blue=0;inventory.purple=0;inventory.green=0;inventory.red=0;
   collectedLetters.length=0;selectedLetter=null;
   document.getElementById('gameover').classList.remove('show');
@@ -1307,12 +1382,7 @@ document.getElementById('restart').addEventListener('click',()=>{
   letterBlocks.forEach(l=>{if(!l.userData.alive){l.userData.alive=true;world.addChild(l);}});
   apples.forEach(a=>{if(!a.userData.alive){a.userData.alive=true;world.addChild(a);}});
   chests.forEach(c=>{c.userData.opened=false;c.userData.lid.setLocalPosition(0,0.55,0);c.userData.lid.setLocalEulerAngles(0,0,0);});
-  bridges.forEach(b=>{
-    if(b.req){
-      b.locked=true;
-      if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);
-    }
-  });
+  bridges.forEach(b=>{if(b.req){b.locked=true;if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);}});
   guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;g.userData.stage=0;});
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
@@ -1373,13 +1443,10 @@ app.on('update',dt=>{
   updateCamera();
   guards.forEach(g=>{
     const u=g.userData;
-    if(u.marker){
-      u.marker.setLocalPosition(0,2.3+Math.sin(t*3)*0.15,0);
-    }
+    if(u.marker){u.marker.setLocalPosition(0,2.3+Math.sin(t*3)*0.15,0);}
     if(u.passed){
       const gp=g.getLocalPosition();
-      const tx=u.side.x, tz=u.side.z;
-      g.setLocalPosition(gp.x+(tx-gp.x)*0.05,gp.y,gp.z+(tz-gp.z)*0.05);
+      g.setLocalPosition(gp.x+(u.side.x-gp.x)*0.05,gp.y,gp.z+(u.side.z-gp.z)*0.05);
     }else if(u.lungeT>0){
       const gp=g.getLocalPosition();
       g.setLocalPosition(gp.x+u.lungeDir.x*3*dt,gp.y,gp.z+u.lungeDir.z*3*dt);
@@ -1397,12 +1464,14 @@ app.on('update',dt=>{
     actionBtn.classList.add('show');
     if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
     else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
+    else if(near.userData.game)prompt.textContent='E / клик — мини-игра: '+near.userData.gameDef.title;
     else if(near.userData.mine)prompt.textContent='E / клик — '+(near.userData.underground?'подняться':'спуститься в шахту');
     else prompt.textContent='E / клик — поговорить со стражником';
   }else{
     prompt.classList.remove('show');
     actionBtn.classList.remove('show');
   }
+  const clouds=[];
   clouds.forEach(c=>{
     const cp=c.e.getLocalPosition();
     let nx=cp.x+c.speed*dt;
