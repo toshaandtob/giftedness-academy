@@ -23,6 +23,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .icon.pickaxe{background:linear-gradient(135deg,#cfd8dc,#78909c)}
 .icon.food{background:linear-gradient(135deg,#ffcc80,#e65100)}
 .icon.book{background:linear-gradient(135deg,#f7dd93,#d9a441)}
+.icon.backpack{background:linear-gradient(135deg,#a1887f,#5d4037)}
 .pad{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;pointer-events:auto}
 .pad button{background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;user-select:none;touch-action:none}
 .pad .up{grid-column:2;grid-row:1}
@@ -105,6 +106,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <div class="slot active" data-slot="pickaxe"><div class="icon pickaxe">⛏️</div><span class="count">1</span></div>
     <div class="slot" data-slot="food" id="foodSlot"><div class="icon food">🍎</div><span class="count" id="foodSlotCount">0</span></div>
     <div class="slot" data-slot="book" id="bookSlot"><div class="icon book">📖</div></div>
+    <div class="slot" data-slot="backpack" id="backpackSlot"><div class="icon backpack">🎒</div></div>
   </div>
   <div class="toast" id="toast"></div>
 </div>
@@ -112,7 +114,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок или прочитать письмо. <b>E</b> — действие (сундук, стражник, маяк).</p>
-    <p>Цель: пройти все острова по цепочке, читая письма с подсказками и проходя испытания стражников. В центре каждого острова — маяк с полным текстом лекции.</p>
+    <p>Цель: пройти все острова по цепочке, читая письма с подсказками и проходя испытания стражников. В центре каждого острова — маяк с полным текстом лекции. Собранные письма и руда попадают в инвентарь (🎒).</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -137,6 +139,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <h2>Книга квестов</h2>
     <ul class="questlist" id="questList"></ul>
     <button id="closeBook">Закрыть</button>
+  </div>
+</div>
+<div class="modal" id="inventoryModal">
+  <div class="box">
+    <h2>Инвентарь</h2>
+    <ul class="questlist" id="inventoryList"></ul>
+    <button id="closeInventory">Закрыть</button>
   </div>
 </div>
 <div class="modal" id="finalModal">
@@ -709,6 +718,8 @@ let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0
 const tasks={};
 for(let i=1;i<=9;i++)tasks['t'+i]=false;
 const ores=[];
+// Инвентарь
+const inventory={gold:0,blue:0,purple:0,green:0,red:0,letters:0};
 
 function randPosOnLoc(l){
   const r=locRadius(l.id);
@@ -912,12 +923,14 @@ function mineAt(cx,cy){
     document.getElementById('letterText').textContent=l.hint;
     document.getElementById('letterModal').classList.add('show');
     lettersRead++;
+    inventory.letters++;
     updateHUD();
     return;
   }
   const type=best.userData.type;
   best.userData.alive=false;
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
+  inventory[type]++;
   if(type===questType){
     food++;foodTotal++;score++;toast('Верно! Получена еда.');
     setTimeout(()=>spawnOre(type),1500);
@@ -1032,6 +1045,34 @@ document.getElementById('closeBook').addEventListener('click',()=>{
   document.getElementById('bookModal').classList.remove('show');
 });
 
+// Инвентарь (рюкзак)
+function renderInventory(){
+  const ul=document.getElementById('inventoryList');
+  ul.innerHTML='';
+  const items=[
+    ['Письма',inventory.letters],
+    ['Золото',inventory.gold],
+    ['Кристаллы',inventory.blue],
+    ['Руны',inventory.purple],
+    ['Семена',inventory.green],
+    ['Опасные блоки',inventory.red],
+    ['Еда',food]
+  ];
+  items.forEach(([name,count])=>{
+    const li=document.createElement('li');
+    li.className='todo';
+    li.textContent=name+': '+count;
+    ul.appendChild(li);
+  });
+}
+document.getElementById('backpackSlot').addEventListener('click',()=>{
+  renderInventory();
+  document.getElementById('inventoryModal').classList.add('show');
+});
+document.getElementById('closeInventory').addEventListener('click',()=>{
+  document.getElementById('inventoryModal').classList.remove('show');
+});
+
 // Сворачивание задания
 document.getElementById('questToggle').addEventListener('click',()=>{
   const panel=document.getElementById('questPanel');
@@ -1052,6 +1093,7 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 document.getElementById('restart').addEventListener('click',()=>{
   hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;
   for(let i=1;i<=9;i++)tasks['t'+i]=false;
+  inventory.gold=0;inventory.blue=0;inventory.purple=0;inventory.green=0;inventory.red=0;inventory.letters=0;
   document.getElementById('gameover').classList.remove('show');
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
