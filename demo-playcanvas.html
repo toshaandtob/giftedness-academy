@@ -155,16 +155,16 @@ app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.start();
 
 const scene=app.scene;
-scene.ambientLight=new pc.Color(0.45,0.4,0.38);
-scene.fogColor=new pc.Color(0.9,0.75,0.6);
+scene.ambientLight=new pc.Color(0.5,0.5,0.55);
+scene.fogColor=new pc.Color(0.5,0.7,1.0);
 scene.fogStart=30;scene.fogEnd=170;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:600,clearColor:new pc.Color(0.9,0.75,0.6)});
+camera.addComponent('camera',{fov:60,near:0.1,far:600,clearColor:new pc.Color(0.5,0.7,1.0)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
-light.addComponent('light',{type:'directional',color:new pc.Color(1,0.85,0.6),intensity:1.3,castShadows:false});
+light.addComponent('light',{type:'directional',color:new pc.Color(1,1,0.9),intensity:1.3,castShadows:false});
 light.setEulerAngles(35,40,0);
 app.root.addChild(light);
 
@@ -174,30 +174,31 @@ function mat(color,emissive){
   if(emissive){m.emissive=new pc.Color(emissive[0],emissive[1],emissive[2]);m.emissiveIntensity=1.0;}
   m.update();return m;
 }
-const metalMat=mat([0.55,0.57,0.6]);
-const darkMetal=mat([0.3,0.32,0.35]);
-const rustMat=mat([0.6,0.35,0.2]);
-const copperMat=mat([0.85,0.5,0.25],[0.35,0.15,0.02]);
-const lampMat=mat([1,0.9,0.6],[1,0.8,0.4]);
-const crateMat=mat([0.55,0.4,0.22]);
-const grassMat=mat([0.5,0.7,0.45]);
-const leafMat=mat([0.45,0.65,0.5]);
-const leafPink=mat([0.9,0.55,0.6]);
-const trunkMat=mat([0.45,0.32,0.22]);
-const cloudMat=mat([0.98,0.95,0.9]);
-const goldMat=mat([0.9,0.75,0.35],[0.5,0.35,0.1]);
-const blueMat=mat([0.4,0.7,0.8],[0.1,0.35,0.45]);
-const purpleMat=mat([0.6,0.45,0.85],[0.25,0.15,0.45]);
-const greenMat=mat([0.45,0.7,0.4],[0.15,0.35,0.1]);
-const redMat=mat([0.75,0.3,0.25],[0.35,0.1,0.05]);
-const letterMat=mat([0.95,0.85,0.5],[0.6,0.5,0.2]);
+// Классические цвета Minecraft
+const metalMat=mat([0.5,0.5,0.5]);
+const darkMetal=mat([0.35,0.35,0.38]);
+const rustMat=mat([0.55,0.4,0.25]);
+const copperMat=mat([0.8,0.65,0.3],[0.3,0.2,0.05]);
+const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
+const crateMat=mat([0.55,0.4,0.25]);
+const grassMat=mat([0.45,0.65,0.3]);
+const leafMat=mat([0.3,0.55,0.25]);
+const leafPink=mat([0.4,0.6,0.3]);
+const trunkMat=mat([0.4,0.3,0.2]);
+const cloudMat=mat([0.95,0.95,0.95]);
+const goldMat=mat([0.85,0.65,0.2],[0.4,0.3,0.05]);
+const blueMat=mat([0.4,0.8,0.9],[0.1,0.4,0.5]);
+const purpleMat=mat([0.6,0.4,0.8],[0.25,0.15,0.45]);
+const greenMat=mat([0.3,0.7,0.4],[0.1,0.35,0.15]);
+const redMat=mat([0.8,0.2,0.2],[0.4,0.05,0.05]);
+const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
 
 // Солнце
 const sun=new pc.Entity('sun');
-sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.6],[1,0.85,0.5])});
+sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
 sun.setLocalPosition(70,45,-70);
 sun.setLocalScale(9,9,9);
 world.addChild(sun);
@@ -235,7 +236,6 @@ function islandAt(x,z){
   }
   return null;
 }
-// Мосты с заданиями
 const bridges=[
   {x1:-12,z1:-12,x2:12,z2:-12,req:'t1'},
   {x1:12,z1:-12,x2:12,z2:12,req:'t2'},
@@ -286,7 +286,7 @@ for(let x=-32;x<32;x++){
       const isTop=(y===top);
       let m;
       if(isl.type==='dungeon')m=darkMetal;
-      else m=isTop?(Math.random()<0.35?grassMat:metalMat):darkMetal;
+      else m=isTop?(Math.random()<0.35?grassMat:metalMat):rustMat;
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
         if(Math.random()<0.4){
@@ -324,7 +324,7 @@ islands.forEach(isl=>{
   world.addChild(base);
 });
 
-// Мосты: плиты и барьеры
+// Мосты
 bridges.forEach(b=>{
   const dx=b.x2-b.x1,dz=b.z2-b.z1;
   const len=Math.sqrt(dx*dx+dz*dz);
@@ -349,7 +349,7 @@ bridges.forEach(b=>{
   }
 });
 
-// Город: дома, бочки, таблички
+// Город
 function house(x,z){
   for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
     cube(x+dx,BASE,z+dz,metalMat);
@@ -412,7 +412,7 @@ islands.filter(i=>i.type==='dungeon').forEach(isl=>{
     const g=new pc.Entity('torch');
     const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkMetal});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
     const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.7,0.4),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
+    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
     g.setLocalPosition(x,BASE+0.5,z);
     world.addChild(g);
   }
@@ -541,7 +541,7 @@ islands.filter(i=>i.type==='story').forEach(addChest);
 islands.filter(i=>i.type==='city').forEach(isl=>{addChest(isl);addChest(isl);});
 islands.filter(i=>i.type==='dungeon'||i.type==='extra').forEach(addChest);
 
-// NPC и задания
+// NPC
 const npcs=[];
 const npcData=[
   {name:'Инженер Айрон',color:[0.3,0.6,0.8],task:'t1',taskText:'Добудь 2 золотых блока.',dialog:'Добро пожаловать на Остров Начал. Чтобы открыть мост на Остров Испытаний, добудь 2 золотых блока.'},
@@ -631,7 +631,6 @@ function setQuest(){
 }
 setQuest();
 
-// Задания и мосты
 function unlockBridges(req){
   bridges.forEach(b=>{
     if(b.req===req&&b.locked){
@@ -648,7 +647,6 @@ function checkTasks(){
   if(!tasks.t5&&visitedDungeons.size>=1){tasks.t5=true;unlockBridges('t5');toast('Мосты к подземельям и новым островам открыты!');}
 }
 
-// Квесты
 const quests=[
   {text:'Айрон: добыть 2 золота',done:()=>tasks.t1},
   {text:'Вента: открыть сундук',done:()=>tasks.t2},
