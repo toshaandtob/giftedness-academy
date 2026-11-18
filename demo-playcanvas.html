@@ -185,11 +185,21 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Академия знаний</h2>
     <p>Психолого-педагогическая диагностика одаренности</p>
-    <p>Сначала изучите материал (12 разделов), затем пройдите тест — и только после этого откроется 3D-игра с мини-играми.</p>
-    <p>В игре: стражники сразу дают тестовые вопросы, а на островах можно собирать <b>сферы знаний</b> — за каждые 5 сфер бонус: +1 сердце!</p>
-    <button id="openTheory">📚 Изучить материал</button>
+    <p>В начале игры Рассказчик устно объяснит правила и управление. Тест для входа не нужен — можно сразу играть!</p>
     <button id="startGameBtn">🎮 Начать игру</button>
-    <p id="gameLockHint" style="color:#ff8a80;font-size:.85rem;margin-top:.4rem"></p>
+    <button id="openTheory" style="margin-top:.4rem">📚 Материал (по желанию)</button>
+  </div>
+</div>
+<div class="modal" id="rulesModal">
+  <div class="box">
+    <h2>🔊 Рассказчик: правила игры</h2>
+    <p id="rulesText">Добро пожаловать в Академию знаний! Ваша задача — пройти 12 островов. На каждом острове стоит стражник: подойдите к нему, и он сразу задаст вопрос по материалу. Правильный ответ откроет мост на следующий остров. Неправильный — минус одно сердце.
+
+Собирайте светящиеся сферы знаний: за каждую — очки и еда, а за 5 подряд — дополнительное сердце. Яблоки на деревьях и сундуки тоже дают еду. Некоторые сундуки — с сюрпризом!
+
+Обелиски и мини-игры необязательны: это дополнительный материал и практика. Компас сверху подскажет путь к следующему стражнику. На телефоне двигайтесь джойстиком слева, смотрите свайпом справа, прыгайте кнопкой со стрелкой. На компьютере — WASD, мышь и пробел.</p>
+    <button id="speakRules">🔊 Прослушать правила</button>
+    <button id="closeRules">Начать приключение</button>
   </div>
 </div>
 <div class="modal" id="theoryModal">
@@ -215,18 +225,6 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <button id="closeTest" style="display:none">Закрыть</button>
   </div>
 </div>
-<div class="modal" id="tutorialModal">
-  <div class="box">
-    <h2>Как играть</h2>
-    <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок и графика — через ⚙.</p>
-    <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок, E — действие. Мобильные кнопки на ПК скрыты.</p>
-    <p><b>Стражники:</b> подойдите к стражнику — он сразу даст тестовый вопрос по материалу. Ответьте верно — и перейдёте на следующий остров.</p>
-    <p><b>Сферы знаний:</b> светящиеся шарики на островах. Соберите 5 подряд — получите +1 сердце. Компас сверху показывает путь к следующему стражнику.</p>
-    <p><b>Сундуки-сюрпризы:</b> некоторые сундуки дают случайный бонус: еду, сердце или сферу знаний.</p>
-    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней, с меньшим разрешением и зоной прорисовки.</p>
-    <button id="startGame">Начать игру</button>
-  </div>
-</div>
 <div class="modal" id="letterModal">
   <div class="box">
     <h2 id="letterTitle"></h2>
@@ -240,6 +238,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <p id="npcText"></p>
     <h3 id="quizQ" style="font:700 1.1rem/1.3 'Marcellus',serif;color:#ffe9a8;margin:.6rem 0 .3rem"></h3>
     <div class="quizOpts" id="quizOpts"></div>
+    <button id="speakQuiz" style="margin-top:.4rem">🔊 Прослушать вопрос</button>
     <button id="closeNpc">Закрыть</button>
   </div>
 </div>
@@ -1014,6 +1013,15 @@ function achieve(key,text){
   achievements[key]=true;
   toast('🏆 Достижение: '+text);
 }
+function speak(text){
+  if(window.speechSynthesis){
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ru-RU';
+    u.rate=0.95;
+    speechSynthesis.speak(u);
+  }
+}
 
 const sun=new pc.Entity('sun');
 sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
@@ -1555,6 +1563,7 @@ function openQuiz(guard){
     opts.appendChild(btn);
   });
   document.getElementById('npcModal').classList.add('show');
+  speak(q.q+'. Варианты: '+q.opts.join(', ')+'.');
 }
 
 function openGame(def){
@@ -1705,6 +1714,12 @@ function interact(){
 document.getElementById('actionBtn').addEventListener('click',interact);
 document.getElementById('closeNpc').addEventListener('click',()=>{
   document.getElementById('npcModal').classList.remove('show');
+  speechSynthesis.cancel();
+});
+document.getElementById('speakQuiz').addEventListener('click',()=>{
+  const q=document.getElementById('quizQ').textContent;
+  const opts=[...document.getElementById('quizOpts').children].map(b=>b.textContent).join(', ');
+  speak(q+'. Варианты: '+opts+'.');
 });
 document.getElementById('closeGame').addEventListener('click',()=>{
   document.getElementById('gameModal').classList.remove('show');
@@ -1820,21 +1835,7 @@ document.getElementById('closeFinal').addEventListener('click',()=>{
   document.getElementById('finalModal').classList.remove('show');
 });
 
-let theoryPassed=localStorage.getItem('theoryPassed')==='1';
 let theoryIdx=0;
-function updateStartScreen(){
-  const btn=document.getElementById('startGameBtn');
-  const hint=document.getElementById('gameLockHint');
-  if(theoryPassed){
-    btn.disabled=false;
-    btn.style.opacity='1';
-    hint.textContent='✅ Материал пройден — игра открыта!';
-  }else{
-    btn.disabled=true;
-    btn.style.opacity='0.5';
-    hint.textContent='🔒 Сначала изучите материал и пройдите тест (нужно 9 из 12).';
-  }
-}
 function showTheory(){
   const l=LOCS[theoryIdx];
   document.getElementById('theoryTitle').textContent='Раздел '+(theoryIdx+1)+': '+l.name.replace('Остров ','');
@@ -1880,14 +1881,7 @@ function finishTest(){
   document.getElementById('testOpts').innerHTML='';
   const res=document.getElementById('testResult');
   res.style.display='block';
-  if(testScore>=9){
-    theoryPassed=true;
-    localStorage.setItem('theoryPassed','1');
-    res.textContent='✅ Тест пройден: '+testScore+' из 12. Игра открыта!';
-    updateStartScreen();
-  }else{
-    res.textContent='❌ Тест не пройден: '+testScore+' из 12. Нужно минимум 9. Изучите материал еще раз.';
-  }
+  res.textContent='Результат: '+testScore+' из 12.';
   document.getElementById('closeTest').style.display='block';
 }
 document.getElementById('openTest').addEventListener('click',()=>{
@@ -1900,17 +1894,19 @@ document.getElementById('openTest').addEventListener('click',()=>{
 });
 document.getElementById('closeTest').addEventListener('click',()=>{
   document.getElementById('testModal').classList.remove('show');
-  document.getElementById('startScreen').classList.add('show');
 });
 document.getElementById('startGameBtn').addEventListener('click',()=>{
-  if(!theoryPassed){toast('Сначала пройдите материал и тест!');return;}
   document.getElementById('startScreen').classList.remove('show');
-  document.getElementById('tutorialModal').classList.add('show');
+  document.getElementById('rulesModal').classList.add('show');
+  speak(document.getElementById('rulesText').textContent);
 });
-document.getElementById('startGame').addEventListener('click',()=>{
-  document.getElementById('tutorialModal').classList.remove('show');
+document.getElementById('speakRules').addEventListener('click',()=>{
+  speak(document.getElementById('rulesText').textContent);
 });
-updateStartScreen();
+document.getElementById('closeRules').addEventListener('click',()=>{
+  document.getElementById('rulesModal').classList.remove('show');
+  speechSynthesis.cancel();
+});
 
 let t=0;
 let dayTime=0;
