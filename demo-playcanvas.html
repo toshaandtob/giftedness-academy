@@ -75,23 +75,48 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
 .gameover p{margin:.3rem 0}
 .gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
-/* Мобильная адаптация: всё компактнее */
-@media(max-width:520px){
-  .slot{width:44px;height:44px}
-  .slot .icon{width:24px;height:24px;font-size:14px}
-  .slot .count{font-size:11px}
-  .panel{max-width:200px;font-size:.8rem;padding:.4rem .6rem}
-  .panel h1{font-size:.9rem}
-  .panel-body p{font-size:.8rem}
-  .hearts{bottom:120px;font-size:16px;gap:2px}
-  .pad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:3px;left:10px;bottom:10px}
-  .pad button{width:40px;height:40px;font-size:16px}
-  .hotbar{right:10px;bottom:10px;padding:6px;gap:6px}
-  .actionBtn{bottom:70px;padding:.5rem 1rem;font-size:.9rem}
-  .prompt{bottom:130px;font-size:.85rem;padding:.3rem .6rem}
-  .modal .box{padding:1rem;max-width:92vw}
-  .crosshair{width:18px;height:18px}
-  .topbar{left:8px;top:8px;right:8px}
+/* ===== МОБИЛЬНЫЙ ИНТЕРФЕЙС: отдельный, минимальный ===== */
+@media(max-width:768px){
+  /* Скрываем книгу квестов на телефоне — она дублирует панель */
+  .slot[data-slot="book"]{display:none}
+  /* Панель заданий: очень компактная, свёрнута по умолчанию */
+  .panel{max-width:170px;font-size:.7rem;padding:.3rem .5rem}
+  .panel h1{font-size:.75rem}
+  .panel-body p{font-size:.65rem;margin:.1rem 0}
+  .quest .dot{width:10px;height:10px}
+  .score{font-size:.8rem}
+  /* Сердца: маленькие, низко, не мешают */
+  .hearts{bottom:105px;font-size:13px;gap:1px}
+  /* Крестик меньше */
+  .crosshair{width:14px;height:14px;border-width:1.5px}
+  /* Кнопки движения: компактные */
+  .pad{grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px);gap:2px;left:6px;bottom:6px}
+  .pad button{width:34px;height:34px;font-size:13px;border-width:1.5px}
+  /* Хотбар: только нужное, компактно */
+  .hotbar{right:6px;bottom:6px;padding:4px;gap:3px}
+  .slot{width:38px;height:38px}
+  .slot .icon{width:20px;height:20px;font-size:11px}
+  .slot .count{font-size:9px;right:2px;bottom:1px}
+  /* Кнопка действия: меньше */
+  .actionBtn{bottom:55px;padding:.35rem .7rem;font-size:.75rem}
+  /* Подсказки: скрыты на телефоне — не мешают */
+  .prompt{display:none!important}
+  /* Тосты: меньше */
+  .toast{font-size:.7rem;padding:.35rem .6rem;top:12%}
+  /* Модалки: компактные */
+  .modal .box{padding:.7rem;max-width:94vw;border-radius:12px}
+  .modal h2{font-size:1rem}
+  .modal p{font-size:.8rem}
+  .modal button{padding:.45rem .9rem;font-size:.85rem}
+  .quizOpts button{padding:.45rem .7rem;font-size:.8rem}
+  .questlist li{font-size:.8rem}
+  .invItem{padding:.3rem .4rem;font-size:.8rem}
+  /* Верхняя панель */
+  .topbar{left:4px;top:4px;right:4px}
+}
+/* ===== ПК: всё как было ===== */
+@media(min-width:769px){
+  /* Ничего не меняем — ПК-интерфейс остаётся прежним */
 }
 </style>
 </head>
@@ -191,7 +216,6 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <script>
 (function(){
 'use strict';
-// Фиксируем ориентацию (если браузер поддерживает)
 if(screen.orientation&&screen.orientation.lock){
   screen.orientation.lock('portrait').catch(()=>{});
 }
@@ -814,6 +838,12 @@ function updateHUD(){
   renderHearts();
 }
 updateHUD();
+
+// На телефоне панель заданий свёрнута по умолчанию
+if(window.innerWidth<=768){
+  document.getElementById('questPanel').classList.add('collapsed');
+  document.getElementById('questToggle').textContent='▸';
+}
 
 function toast(text){
   const el=document.getElementById('toast');
