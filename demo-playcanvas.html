@@ -93,10 +93,10 @@ app.start();
 const scene=app.scene;
 scene.ambientLight=new pc.Color(0.4,0.4,0.45);
 scene.fogColor=new pc.Color(0.6,0.68,0.78);
-scene.fogStart=40;scene.fogEnd=120;
+scene.fogStart=50;scene.fogEnd=160;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:300,clearColor:new pc.Color(0.6,0.68,0.78)});
+camera.addComponent('camera',{fov:60,near:0.1,far:400,clearColor:new pc.Color(0.6,0.68,0.78)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
@@ -114,9 +114,8 @@ const grassMat=mat([0.42,0.62,0.35]);
 const dirtMat=mat([0.45,0.32,0.2]);
 const pathMat=mat([0.5,0.38,0.24]);
 const waterMat=mat([0.3,0.55,0.7]);
-const rockMat=mat([0.5,0.5,0.52]);
+const stoneMat=mat([0.5,0.5,0.52]);
 const snowMat=mat([0.95,0.95,0.98]);
-const mountainMat=mat([0.45,0.4,0.38]);
 const trunkMat=mat([0.4,0.28,0.18]);
 const leafMat=mat([0.3,0.55,0.3]);
 const bushMat=mat([0.35,0.6,0.35]);
@@ -133,13 +132,13 @@ const redMat=mat([0.75,0.3,0.25],[0.35,0.1,0.05]);
 const world=new pc.Entity('world');
 app.root.addChild(world);
 
-// Воксельная карта 20x20 с перепадами высоты
-const SIZE=20;
+// Большая воксельная карта 40x40
+const SIZE=40;
 const HALF=SIZE/2;
 function isPath(x,z){return z===0||z===1;}
-function isLake(x,z){const dx=x+8,dz=z-8;return dx*dx+dz*dz<=9;}
+function isLake(x,z){const dx=x+12,dz=z-12;return dx*dx+dz*dz<=16;}
 function baseHeight(x,z){
-  const n=Math.sin(x*0.35)+Math.cos(z*0.3)+Math.sin((x+z)*0.2);
+  const n=Math.sin(x*0.25)+Math.cos(z*0.22)+Math.sin((x+z)*0.15);
   let h=1+Math.round((n+3)/3);
   return Math.max(1,Math.min(3,h));
 }
@@ -152,40 +151,35 @@ function getHeight(x,z){
   const info=terrainInfo(Math.round(x),Math.round(z));
   return info.h;
 }
+function cube(x,y,z,m){
+  const b=new pc.Entity();
+  b.addComponent('render',{type:'box',material:m});
+  b.setLocalPosition(x,y,z);
+  world.addChild(b);
+}
 
-// Строим воксельный рельеф
+// Строим рельеф
 for(let x=-HALF;x<HALF;x++){
   for(let z=-HALF;z<HALF;z++){
     const info=terrainInfo(x,z);
-    if(info.h===0){
-      const w=new pc.Entity();
-      w.addComponent('render',{type:'box',material:waterMat});
-      w.setLocalPosition(x,0,z);
-      world.addChild(w);
-      continue;
-    }
+    if(info.h===0){cube(x,0,z,waterMat);continue;}
     for(let y=0;y<info.h;y++){
       const isTop=(y===info.h-1);
       const m=isTop?(info.top==='path'?pathMat:grassMat):dirtMat;
-      const b=new pc.Entity();
-      b.addComponent('render',{type:'box',material:m});
-      b.setLocalPosition(x,y,z);
-      world.addChild(b);
+      cube(x,y,z,m);
       if(isTop&&info.top==='grass'){
-        // Травинки
-        if(Math.random()<0.35){
+        if(Math.random()<0.3){
           const t=new pc.Entity();
           t.addComponent('render',{type:'box',material:tuftMat});
-          t.setLocalPosition(x+ (Math.random()-0.5)*0.6, y+0.55, z+(Math.random()-0.5)*0.6);
+          t.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.55,z+(Math.random()-0.5)*0.6);
           t.setLocalScale(0.08,0.35,0.08);
           world.addChild(t);
         }
-        // Цветы
-        if(Math.random()<0.08){
+        if(Math.random()<0.06){
           const f=new pc.Entity();
           const fm=[flowerRed,flowerYellow,flowerWhite][Math.floor(Math.random()*3)];
           f.addComponent('render',{type:'box',material:fm});
-          f.setLocalPosition(x+(Math.random()-0.5)*0.6, y+0.65, z+(Math.random()-0.5)*0.6);
+          f.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.65,z+(Math.random()-0.5)*0.6);
           f.setLocalScale(0.18,0.18,0.18);
           world.addChild(f);
         }
@@ -194,63 +188,70 @@ for(let x=-HALF;x<HALF;x++){
   }
 }
 
-// Горы по краям
-const mountains=[[-22,-18,6,10],[22,-18,7,12],[-24,14,6,9],[24,14,7,11],[0,-24,8,14],[0,24,8,13]];
-mountains.forEach(m=>{
-  const base=new pc.Entity('mountain');
-  base.addComponent('render',{type:'cone',material:mountainMat});
-  base.setLocalPosition(m[0],m[3]/2,m[1]);
-  base.setLocalScale(m[2],m[3],m[2]);
-  world.addChild(base);
-  const cap=new pc.Entity('cap');
-  cap.addComponent('render',{type:'cone',material:snowMat});
-  cap.setLocalPosition(m[0],m[3]*0.8,m[1]);
-  cap.setLocalScale(m[2]*0.4,m[3]*0.3,m[2]*0.4);
-  world.addChild(cap);
-});
-
-// Деревья на рельефе
-function tree(x,z,scale){
-  const y=getHeight(x,z);
-  const g=new pc.Entity('tree');
-  const trunk=new pc.Entity();trunk.addComponent('render',{type:'cylinder',material:trunkMat});trunk.setLocalPosition(0,1,0);trunk.setLocalScale(0.3,2,0.3);g.addChild(trunk);
-  const c1=new pc.Entity();c1.addComponent('render',{type:'sphere',material:leafMat});c1.setLocalPosition(0,2.4,0);c1.setLocalScale(1.6,1.8,1.6);g.addChild(c1);
-  const c2=new pc.Entity();c2.addComponent('render',{type:'sphere',material:leafMat});c2.setLocalPosition(0.7,2.9,0.2);c2.setLocalScale(1.1,1.2,1.1);g.addChild(c2);
-  const c3=new pc.Entity();c3.addComponent('render',{type:'sphere',material:leafMat});c3.setLocalPosition(-0.6,2.8,-0.2);c3.setLocalScale(1,1.1,1);g.addChild(c3);
-  g.setLocalPosition(x,y,z);g.setLocalScale(scale,scale,scale);
-  world.addChild(g);
+// Воксельные горы (ступенчатые пирамиды из кубов)
+function voxelMountain(cx,cz,baseR,maxH){
+  for(let dx=-baseR;dx<=baseR;dx++){
+    for(let dz=-baseR;dz<=baseR;dz++){
+      const d=Math.max(Math.abs(dx),Math.abs(dz));
+      const h=maxH-d;
+      if(h<=0)continue;
+      for(let y=0;y<h;y++){
+        const isTop=(y===h-1);
+        const m=(isTop&&h>=maxH-1)?snowMat:stoneMat;
+        cube(cx+dx,y,cz+dz,m);
+      }
+    }
+  }
 }
-for(let i=0;i<28;i++){
+voxelMountain(-26,-26,4,7);
+voxelMountain(26,-26,4,6);
+voxelMountain(-26,26,4,6);
+voxelMountain(26,26,4,7);
+
+// Воксельные деревья (ствол и крона из кубов)
+function voxelTree(x,z){
+  const y=getHeight(x,z);
+  for(let i=0;i<3;i++)cube(x,y+i,z,trunkMat);
+  for(let dy=3;dy<=4;dy++){
+    for(let dx=-1;dx<=1;dx++){
+      for(let dz=-1;dz<=1;dz++){
+        if(dy===4&&Math.abs(dx)===1&&Math.abs(dz)===1)continue;
+        cube(x+dx,y+dy,z+dz,leafMat);
+      }
+    }
+  }
+}
+for(let i=0;i<40;i++){
   const x=Math.floor((Math.random()-0.5)*SIZE);
   const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
   if(isPath(x,z)||isLake(x,z))continue;
-  tree(x,z,0.8+Math.random()*0.6);
+  voxelTree(x,z);
 }
 
 // Кусты
-for(let i=0;i<18;i++){
+for(let i=0;i<30;i++){
   const x=Math.floor((Math.random()-0.5)*SIZE);
   const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
   if(isPath(x,z)||isLake(x,z))continue;
   const y=getHeight(x,z);
   const b=new pc.Entity('bush');
-  b.addComponent('render',{type:'sphere',material:bushMat});
+  b.addComponent('render',{type:'box',material:bushMat});
   b.setLocalPosition(x,y+0.3,z);
   b.setLocalScale(0.8,0.6,0.8);
   world.addChild(b);
 }
 
 // Камни
-for(let i=0;i<14;i++){
+for(let i=0;i<20;i++){
   const x=Math.floor((Math.random()-0.5)*SIZE);
   const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
   if(isPath(x,z)||isLake(x,z))continue;
   const y=getHeight(x,z);
   const rock=new pc.Entity('rock');
-  rock.addComponent('render',{type:'box',material:rockMat});
+  rock.addComponent('render',{type:'box',material:stoneMat});
   rock.setLocalPosition(x,y+0.2,z);
   rock.setLocalScale(0.6+Math.random()*0.6,0.4+Math.random()*0.4,0.6+Math.random()*0.6);
   rock.setEulerAngles(0,Math.random()*360,0);
@@ -258,14 +259,14 @@ for(let i=0;i<14;i++){
 }
 
 // Факелы
-const torchPositions=[[-5,-5],[5,-5],[-5,5],[5,5]];
+const torchPositions=[[-8,-8],[8,-8],[-8,8],[8,8]];
 const torchCount=window.matchMedia('(max-width:760px)').matches?2:4;
 torchPositions.slice(0,torchCount).forEach(p=>{
   const y=getHeight(p[0],p[1]);
   const g=new pc.Entity('torch');
-  const post=new pc.Entity();post.addComponent('render',{type:'cylinder',material:trunkMat});post.setLocalPosition(0,1,0);post.setLocalScale(0.1,2,0.1);g.addChild(post);
-  const lamp=new pc.Entity();lamp.addComponent('render',{type:'sphere',material:mat([1,0.9,0.6],[1,0.8,0.4])});lamp.setLocalPosition(0,2.2,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,2.2,0);g.addChild(pl);
+  const post=new pc.Entity();post.addComponent('render',{type:'box',material:trunkMat});post.setLocalPosition(0,1,0);post.setLocalScale(0.15,2,0.15);g.addChild(post);
+  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:mat([1,0.9,0.6],[1,0.8,0.4])});lamp.setLocalPosition(0,2.2,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:12});pl.setLocalPosition(0,2.2,0);g.addChild(pl);
   g.setLocalPosition(p[0],y,p[1]);world.addChild(g);
 });
 
@@ -284,8 +285,8 @@ let hearts=3,maxHearts=5,food=0,score=0,gameOver=false;
 const ores=[];
 
 function randPos(){
-  const x=Math.floor((Math.random()-0.5)*14);
-  const z=Math.floor((Math.random()-0.5)*14);
+  const x=Math.floor((Math.random()-0.5)*24);
+  const z=Math.floor((Math.random()-0.5)*24);
   return [x,getHeight(x,z),z];
 }
 function spawnOre(typeKey){
@@ -342,8 +343,8 @@ function flash(){
 }
 
 // Камера
-let yaw=0,pitch=0.5,dist=20;
-const target=new pc.Vec3(0,1.5,0);
+let yaw=0,pitch=0.5,dist=26;
+const target=new pc.Vec3(0,2,0);
 function updateCamera(){
   const x=target.x+dist*Math.sin(yaw)*Math.cos(pitch);
   const y=target.y+dist*Math.sin(pitch);
