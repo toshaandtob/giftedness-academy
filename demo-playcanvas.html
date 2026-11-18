@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Идите по цепочке островов. У каждого моста — стражник: выполните его задания (обелиск, руда, сундук), затем пройдите испытание.</p>
+        <p>Идите по цепочке островов. У каждого моста — стражник: прочитайте обелиск, найдите письмо-подсказку и пройдите испытание.</p>
         <div class="quest"><span class="dot gold"></span><span>Испытаний пройдено: <span id="tasksDone">0</span>/9</span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/9</p>
       </div>
@@ -118,7 +118,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук или поговорить со стражником. <b>E</b> — действие.</p>
-    <p>У каждого стражника — цепочка заданий: 1) посмотри обелиск в центре острова; 2) добудь 2 блока нужного типа; 3) открой сундук; 4) ответь на вопрос. Только после этого стражник пропустит вас.</p>
+    <p>У каждого стражника — 3 задания: 1) прочитай обелиск в центре острова (знания раздела); 2) найди и прочитай письмо-подсказку; 3) ответь на вопрос. Руда нужна только для еды и очков — стражнику она не нужна.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -156,7 +156,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="finalModal">
   <div class="box">
     <h2>Курс пройден!</h2>
-    <p>Вы прошли все локации, выполнили задания стражников и прошли испытания.</p>
+    <p>Вы прошли все локации, изучили знания через обелиски и письма и выполнили испытания.</p>
     <p><b>Заключение:</b> диагностика одаренности — это не единичный акт измерения, а процесс, встроенный в образовательную практику. Тесты дополняются наблюдением, анализом продуктов деятельности и экспертными оценками. Главный «диагност» — учитель, создающий среду, в которой способности могут проявиться.</p>
     <p><b>Литература:</b> Рабочая концепция одаренности (Богоявленская, 2003); Ратнер, Губайдуллина (2014); Савенков (2018); Шумакова (2004); Шумакова и др. (1991); Дружинин (2007, 2026).</p>
     <button id="closeFinal">Продолжить</button>
@@ -623,15 +623,24 @@ LOCS.forEach((l,i)=>{
   letterBlocks.push(e);
 });
 
+// Обелиски — меньше и детализированнее
 const beacons=[];
 function addBeacon(l,i){
   const top=groundTop(l.cx,l.cz);
   const b=new pc.Entity('beacon_'+i);
-  for(let dy=1;dy<=4;dy++){
-    const c=new pc.Entity();c.addComponent('render',{type:'box',material:darkStone});c.setLocalPosition(0,dy-0.5,0);c.setLocalScale(0.9,1,0.9);b.addChild(c);
+  // Основание
+  const base=new pc.Entity();base.addComponent('render',{type:'box',material:darkStone});base.setLocalPosition(0,0.15,0);base.setLocalScale(1.2,0.3,1.2);b.addChild(base);
+  // Колонна (3 сегмента)
+  for(let dy=0;dy<3;dy++){
+    const c=new pc.Entity();c.addComponent('render',{type:'box',material:darkStone});c.setLocalPosition(0,0.45+dy*0.6,0);c.setLocalScale(0.5,0.6,0.5);b.addChild(c);
   }
-  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,4.3,0);lamp.setLocalScale(0.6,0.6,0.6);b.addChild(lamp);
-  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:2,range:15});pl.setLocalPosition(0,4.3,0);b.addChild(pl);
+  // Кольца-украшения
+  for(let dy=0;dy<3;dy++){
+    const ring=new pc.Entity();ring.addComponent('render',{type:'box',material:goldMat});ring.setLocalPosition(0,0.45+dy*0.6,0);ring.setLocalScale(0.65,0.1,0.65);b.addChild(ring);
+  }
+  // Вершина с лампой
+  const top2=new pc.Entity();top2.addComponent('render',{type:'box',material:lampMat});top2.setLocalPosition(0,2.25,0);top2.setLocalScale(0.4,0.4,0.4);b.addChild(top2);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:2,range:12});pl.setLocalPosition(0,2.25,0);b.addChild(pl);
   b.setLocalPosition(l.cx,top+0.5,l.cz);
   b.userData={beacon:true,loc:i,alive:true};
   world.addChild(b);
@@ -661,7 +670,6 @@ function addChest(l){
 LOCS.forEach(addChest);
 
 const guards=[];
-const questTypes=['gold','blue','purple','green'];
 LOCS.forEach((l,i)=>{
   const p=l.guardPos;
   let top=groundTop(p.x,p.z);
@@ -684,7 +692,7 @@ LOCS.forEach((l,i)=>{
   const ux=dx/len,uz=dz/len;
   const sx=Math.round(gx+(-uz)*3);
   const sz=Math.round(gz+(ux)*3);
-  g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0},marker:marker,stage:0,oreType:questTypes[i%4],oreGot:0,chestDone:false,beaconRead:false};
+  g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0},marker:marker,stage:0};
   world.addChild(g);
   guards.push(g);
   const pole=new pc.Entity('bannerpole');
@@ -706,6 +714,7 @@ const types=[
   {key:'green',label:'семя',mat:greenMat},
   {key:'red',label:'опасный блок',mat:redMat}
 ];
+const questTypes=['gold','blue','purple','green'];
 
 let questType='gold';
 let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
@@ -757,7 +766,7 @@ function tasksDoneCount(){
   let n=0;for(let i=1;i<=9;i++)if(tasks['t'+i])n++;return n;
 }
 
-const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: выполни задания стражника (обелиск, руда, сундук) и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
+const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: прочитай обелиск, найди письмо-подсказку и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
 function renderQuests(){
   const ul=document.getElementById('questList');
   ul.innerHTML='';
@@ -925,6 +934,13 @@ function mineAt(cx,cy){
     document.getElementById('letterModal').classList.add('show');
     lettersRead++;
     if(!collectedLetters.includes(best.userData.loc))collectedLetters.push(best.userData.loc);
+    // Стражник этого острова: задание 2 выполнено
+    guards.forEach(g=>{
+      if(g.userData.stage===1&&g.userData.loc===best.userData.loc){
+        g.userData.stage=2;
+        toast('Стражник: ты готов! Поговори со мной.');
+      }
+    });
     updateHUD();
     return;
   }
@@ -940,16 +956,6 @@ function mineAt(cx,cy){
   best.userData.alive=false;
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
   inventory[type]++;
-  // Задания стражников: считаем добычу нужного типа
-  guards.forEach(g=>{
-    if(g.userData.stage===1&&g.userData.oreType===type){
-      g.userData.oreGot++;
-      if(g.userData.oreGot>=2){
-        g.userData.stage=2;
-        toast('Стражник: теперь открой сундук на этом острове.');
-      }
-    }
-  });
   if(type===questType){
     food++;foodTotal++;score++;toast('Верно! Получена еда.');
     setTimeout(()=>spawnOre(type),1500);
@@ -975,14 +981,6 @@ function interactChest(c){
     c.userData.lid.setLocalEulerAngles(-60,0,0);
     food++;foodTotal++;chestsOpened++;
     toast('Сундук открыт! Получена еда.');
-    // Задание стражника: сундук на этом острове
-    guards.forEach(g=>{
-      if(g.userData.stage===2&&g.userData.loc===c.userData.loc){
-        g.userData.chestDone=true;
-        g.userData.stage=3;
-        toast('Стражник: ты готов! Поговори со мной.');
-      }
-    });
   }else{
     toast('Сундук пуст.');
   }
@@ -999,15 +997,8 @@ function interactGuard(g){
     document.getElementById('quizOpts').innerHTML='';
     document.getElementById('npcModal').classList.add('show');
   }else if(u.stage===1){
-    const t=types.find(t=>t.key===u.oreType);
     document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 2: добудь 2 блока типа «'+t.label+'» в специальных местах (темные пятна). Собрано: '+u.oreGot+'/2.';
-    document.getElementById('quizQ').textContent='';
-    document.getElementById('quizOpts').innerHTML='';
-    document.getElementById('npcModal').classList.add('show');
-  }else if(u.stage===2){
-    document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 3: открой сундук на этом острове (подойди и нажми E или кликни по сундуку).';
+    document.getElementById('npcText').textContent='Задание 2: найди письмо-подсказку на острове и прочитай его (клик или E).';
     document.getElementById('quizQ').textContent='';
     document.getElementById('quizOpts').innerHTML='';
     document.getElementById('npcModal').classList.add('show');
@@ -1020,7 +1011,7 @@ function openQuiz(guard){
   const l=LOCS[guard.userData.loc];
   const q=l.npc.quiz;
   document.getElementById('npcName').textContent=l.npc.name;
-  document.getElementById('npcText').textContent='Ты выполнил задания. Теперь ответь на вопрос — и я пропущу тебя.';
+  document.getElementById('npcText').textContent='Ты изучил знания через обелиск и письмо. Теперь ответь на вопрос — и я пропущу тебя.';
   document.getElementById('quizQ').textContent=q.q;
   const opts=document.getElementById('quizOpts');
   opts.innerHTML='';
@@ -1088,9 +1079,8 @@ function interact(){
     // Стражник этого острова: задание 1 выполнено
     guards.forEach(g=>{
       if(g.userData.stage===0&&g.userData.loc===near.userData.loc){
-        g.userData.beaconRead=true;
         g.userData.stage=1;
-        toast('Стражник: теперь добудь 2 блока нужного типа.');
+        toast('Стражник: теперь найди письмо-подсказку.');
       }
     });
   }else if(near.userData.npc){
@@ -1206,7 +1196,7 @@ document.getElementById('restart').addEventListener('click',()=>{
       if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);
     }
   });
-  guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;g.userData.stage=0;g.userData.oreGot=0;g.userData.chestDone=false;g.userData.beaconRead=false;});
+  guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;g.userData.stage=0;});
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
   toast('Игра начата заново.');
