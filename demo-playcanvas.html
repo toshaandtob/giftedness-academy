@@ -85,7 +85,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Пройдите испытания у NPC, читайте письма и открывайте мосты между локациями.</p>
+        <p>Идите по цепочке островов. У каждого моста — стражник: найдите письмо с подсказкой, пройдите испытание, и стражник пропустит вас.</p>
         <div class="quest"><span class="dot gold"></span><span>Испытаний пройдено: <span id="tasksDone">0</span>/9</span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/9</p>
       </div>
@@ -163,10 +163,10 @@ app.start();
 const scene=app.scene;
 scene.ambientLight=new pc.Color(0.5,0.5,0.55);
 scene.fogColor=new pc.Color(0.5,0.7,1.0);
-scene.fogStart=30;scene.fogEnd=180;
+scene.fogStart=40;scene.fogEnd=220;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:600,clearColor:new pc.Color(0.5,0.7,1.0)});
+camera.addComponent('camera',{fov:60,near:0.1,far:800,clearColor:new pc.Color(0.5,0.7,1.0)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
@@ -195,8 +195,6 @@ const greenMat=mat([0.3,0.7,0.4],[0.1,0.35,0.15]);
 const redMat=mat([0.8,0.2,0.2],[0.4,0.05,0.05]);
 const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
-const copperMat=mat([0.8,0.65,0.3],[0.3,0.2,0.05]);
-const rustMat=mat([0.55,0.4,0.25]);
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
@@ -204,57 +202,65 @@ app.root.addChild(world);
 // Солнце
 const sun=new pc.Entity('sun');
 sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
-sun.setLocalPosition(70,45,-70);
-sun.setLocalScale(9,9,9);
+sun.setLocalPosition(90,55,-90);
+sun.setLocalScale(10,10,10);
 world.addChild(sun);
 
-// Локации курса
+// Локации курса (цепочка)
 const LOCS=[
- {id:'intro',cx:-14,cz:-14,name:'Остров Начал',
-  letter:'Диагностика способностей и одаренности — одна из самых дискуссионных тем психолого-педагогической науки. Своевременное выявление одаренных детей помогает создать условия для развития их потенциала, однако история диагностики знает и ошибки гипердиагностики, и случаи, когда одаренность оставалась незамеченной.\n\nВ отечественной традиции, закрепленной в «Рабочей концепции одаренности» под редакцией Д.Б. Богоявленской, одаренность понимается не как статичный набор высоких способностей, а как системное качество психики, которое развивается в течение жизни.\n\nПоэтому задача диагностики — не «сортировать» детей, а понимать траектории их развития.',
-  npc:{name:'Хранитель Богоявленская',color:[0.6,0.45,0.85],dialog:'Я храню Рабочую концепцию одаренности. Пройди испытание, чтобы открыть путь дальше.',
+ {id:'intro',name:'Остров Начал',
+  letter:'Диагностика способностей и одаренности — одна из самых дискуссионных тем психолого-педагогической науки. Своевременное выявление одаренных детей помогает создать условия для развития их потенциала, однако история диагностики знает и ошибки гипердиагностики, и случаи, когда одаренность оставалась незамеченной.\n\nВ отечественной традиции, закрепленной в «Рабочей концепции одаренности» под редакцией Д.Б. Богоявленской, одаренность понимается не как статичный набор высоких способностей, а как системное качество психики, которое развивается в течение жизни.\n\nПоэтому задача диагностики — не «сортировать» детей, а понимать траектории их развития.\n\nПодсказка: одаренность — это не статичный набор способностей и не только IQ.',
+  npc:{name:'Стражник Богоявленской',color:[0.6,0.45,0.85],dialog:'Я стражник этого моста. Найди письмо на острове, прочитай его и ответь на вопрос. Пока не ответишь верно — не пропущу.',
   quiz:{q:'Что такое одаренность в Рабочей концепции Богоявленской?',opts:['Статичный набор высоких способностей','Системное качество психики, развивающееся в течение жизни','Только высокий IQ'],correct:1}}},
- {id:'approaches',cx:14,cz:-14,name:'Остров Подходов',
-  letter:'Психометрический подход исторически первый: одаренность измеряют через IQ или креативность (шкалы Векслера, тесты Торренса, батарея Амтхауэра). Ограничения: тесты улавливают конвергентное мышление и академические навыки, но не мотивацию, настойчивость и специфические виды одаренности; условия тестирования могут быть неравными для детей из разных сред.\n\nМногомерный подход: одаренность — сочетание факторов. Трехкольцевая модель Дж. Рензулли: способности выше среднего + креативность + высокая мотивация. Г. Гарднер — теория множественных интеллектов.\n\nСистемный подход (отечественная традиция): одаренность включает когнитивный, мотивационный, эмоциональный и волевой компоненты. Д.Б. Богоявленская: творческие способности проявляются в «развитии деятельности по собственной инициативе». На этом основан метод «Креативное поле».',
-  npc:{name:'Мастер Рензулли',color:[0.3,0.6,0.8],dialog:'Я представляю разные подходы к диагностике. Пройди испытание о моделях одаренности.',
+ {id:'approaches',name:'Остров Подходов',
+  letter:'Психометрический подход исторически первый: одаренность измеряют через IQ или креативность (шкалы Векслера, тесты Торренса, батарея Амтхауэра). Ограничения: тесты улавливают конвергентное мышление и академические навыки, но не мотивацию, настойчивость и специфические виды одаренности.\n\nМногомерный подход: одаренность — сочетание факторов. Трехкольцевая модель Дж. Рензулли: способности выше среднего + креативность + высокая мотивация. Г. Гарднер — теория множественных интеллектов.\n\nСистемный подход (отечественная традиция): одаренность включает когнитивный, мотивационный, эмоциональный и волевой компоненты. Д.Б. Богоявленская: творческие способности проявляются в «развитии деятельности по собственной инициативе».\n\nПодсказка: ищи модель, где одаренность = способности + креативность + мотивация.',
+  npc:{name:'Стражник Рензулли',color:[0.3,0.6,0.8],dialog:'Я стражник. В письме на острове описаны подходы. Найди модель, где одаренность — пересечение способностей, креативности и мотивации.',
   quiz:{q:'Какой подход описывает одаренность как пересечение способностей, креативности и мотивации?',opts:['Психометрический','Многомерный (Рензулли)','Системный'],correct:1}}},
- {id:'factors',cx:14,cz:14,name:'Остров Факторов',
-  letter:'Возрастная динамика: одаренность проявляется неравномерно; раннее чтение или речь могут отражать как потенциал, так и особенности воспитания.\n\nСоциокультурный контекст: тесты созданы в западной традиции и могут содержать культурно-специфичные задания; дети из семей с низким статусом или мигранты иногда показывают заниженные результаты при высоком потенциале.\n\nСкрытая одаренность и «двойная исключительность»: трудности адаптации, СДВГ, дислексия могут маскировать способности.\n\nБарьеры: Ф.Л. Ратнер и Р.Н. Губайдуллина отмечают трудности коммуникации, перфекционизм, страх неудачи.\n\nСубъективность экспертов: учителя склонны выше оценивать логико-математические способности, родители — переоценивать или недооценивать ребенка.',
-  npc:{name:'Советник Шумакова',color:[0.4,0.7,0.4],dialog:'Я знаю о факторах, которые влияют на диагностику. Пройди испытание о скрытой одаренности.',
+ {id:'factors',name:'Остров Факторов',
+  letter:'Возрастная динамика: одаренность проявляется неравномерно; раннее чтение или речь могут отражать как потенциал, так и особенности воспитания.\n\nСоциокультурный контекст: тесты созданы в западной традиции и могут содержать культурно-специфичные задания; дети из семей с низким статусом или мигранты иногда показывают заниженные результаты при высоком потенциале.\n\nСкрытая одаренность и «двойная исключительность»: трудности адаптации, СДВГ, дислексия могут маскировать способности.\n\nБарьеры: Ф.Л. Ратнер и Р.Н. Губайдуллина отмечают трудности коммуникации, перфекционизм, страх неудачи.\n\nПодсказка: ищи в письме, что может маскировать способности ребенка.',
+  npc:{name:'Стражник Шумаковой',color:[0.4,0.7,0.4],dialog:'Я стражник. В письме описаны факторы, влияющие на диагностику. Что может маскировать одаренность?',
   quiz:{q:'Что может маскировать одаренность ребенка?',opts:['Высокая мотивация','СДВГ и дислексия','Богатая среда'],correct:1}}},
- {id:'herzen',cx:-14,cz:14,name:'Остров Герценовцев',
-  letter:'А.И. Савенков разработал модель интеллектуально-творческого потенциала: когнитивный + мотивационный + креативный компоненты. Ключевой критерий — познавательная активность в естественной среде; одаренность — развивающееся качество, поэтому диагностика — «пролонгированное наблюдение».\n\nН.Б. Шумакова исследовала скрытую одаренность и возрастную динамику: признаки одаренности в дошкольном и младшем школьном возрасте нельзя автоматически переносить на старшие возрасты.\n\nИ.А. Баева: психологически безопасная среда — условие развития способностей; тревожность из-за высоких ожиданий влияет на результаты.\n\nВ.Н. Дружинин: психометрические подходы, соотношение интеллекта и креативности; высокий IQ не гарантирует творческих способностей.',
-  npc:{name:'Профессор Савенков',color:[0.9,0.55,0.3],dialog:'Я расскажу о вкладе ученых РГПУ им. Герцена. Пройди испытание.',
+ {id:'herzen',name:'Остров Герценовцев',
+  letter:'А.И. Савенков разработал модель интеллектуально-творческого потенциала: когнитивный + мотивационный + креативный компоненты. Ключевой критерий — познавательная активность в естественной среде; одаренность — развивающееся качество, поэтому диагностика — «пролонгированное наблюдение».\n\nН.Б. Шумакова исследовала скрытую одаренность и возрастную динамику.\n\nИ.А. Баева: психологически безопасная среда — условие развития способностей.\n\nВ.Н. Дружинин: психометрические подходы, соотношение интеллекта и креативности.\n\nПодсказка: ищи, кто разработал модель интеллектуально-творческого потенциала.',
+  npc:{name:'Стражник Савенкова',color:[0.9,0.55,0.3],dialog:'Я стражник. В письме — о вкладе ученых РГПУ им. Герцена. Кто разработал модель интеллектуально-творческого потенциала?',
   quiz:{q:'Кто разработал модель интеллектуально-творческого потенциала?',opts:['Д.Б. Богоявленская','А.И. Савенков','Дж. Рензулли'],correct:1}}},
- {id:'city',cx:0,cz:0,name:'Город Методик',
-  letter:'Метод «Креативное поле» Д.Б. Богоявленской диагностирует не результат, а способность развивать деятельность по собственной инициативе.\n\nИспытуемому дают однотипные задачи с известным правилом. Если мотивация высока, он начинает исследовать материал за пределами требования: ищет другие способы, закономерности, задает вопросы.\n\nУровни: стимульно-продуктивный (решает поставленные задачи) и эвристический (выходит за пределы требований).\n\nМодификации: «Звери в цирке» (дошкольники и младшие школьники), «Морской бой» (подростки), «Сказочные шахматы» (взрослые).\n\nВалидность: более 7 тыс. испытуемых, лонгитюды до 38 лет. Ограничения: требует квалификации, длится 20–40 минут.',
-  npc:{name:'Д.Б. Богоявленская',color:[0.8,0.3,0.3],dialog:'Я создала метод «Креативное поле». Пройди испытание о его сути.',
+ {id:'city',name:'Город Методик',
+  letter:'Метод «Креативное поле» Д.Б. Богоявленской диагностирует не результат, а способность развивать деятельность по собственной инициативе.\n\nИспытуемому дают однотипные задачи с известным правилом. Если мотивация высока, он начинает исследовать материал за пределами требования.\n\nУровни: стимульно-продуктивный и эвристический.\n\nМодификации: «Звери в цирке», «Морской бой», «Сказочные шахматы».\n\nПодсказка: ищи, что диагностирует метод «Креативное поле».',
+  npc:{name:'Стражник Богоявленской',color:[0.8,0.3,0.3],dialog:'Я стражник. В письме — о методе «Креативное поле». Что он диагностирует?',
   quiz:{q:'Что диагностирует метод «Креативное поле»?',opts:['Только результат решения задачи','Способность развивать деятельность по собственной инициативе','Скорость чтения'],correct:1}}},
- {id:'dungeon1',cx:-24,cz:0,name:'Подземелье Савенкова',
-  letter:'«Карта одаренности» — оценка выраженности склонностей по сферам: интеллектуальной, творческой, академической, художественной, музыкальной, литературной, артистической, технической, информационной, спортивной, социальной. Результат — профиль с доминирующим видом одаренности.\n\n«Методика оценки общей одаренности» — для родителей и педагогов: 9 характеристик (любознательность, сверхчувствительность к проблемам, прогнозирование, словарный запас, оценка, изобретательность и др.). Результат — профиль сильных сторон.\n\n«Методика оценки интересов младших школьников» — оценка интересов по сферам: математика/техника, гуманитарная, художественная, спорт, коммуникация, природа.',
-  npc:{name:'А.И. Савенков',color:[0.5,0.5,0.55],dialog:'Мои методики доступны педагогам и родителям. Пройди испытание о «Карте одаренности».',
+ {id:'dungeon1',name:'Подземелье Савенкова',
+  letter:'«Карта одаренности» — оценка выраженности склонностей по сферам: интеллектуальной, творческой, академической, художественной, музыкальной, литературной, артистической, технической, информационной, спортивной, социальной. Результат — профиль с доминирующим видом одаренности.\n\n«Методика оценки общей одаренности» — 9 характеристик.\n\n«Методика оценки интересов младших школьников» — интересы по сферам.\n\nПодсказка: ищи, какая методика Савенкова оценивает склонности по сферам.',
+  npc:{name:'Стражник Савенкова',color:[0.5,0.5,0.55],dialog:'Я стражник. В письме — о методиках Савенкова. Какая из них оценивает склонности по сферам?',
   quiz:{q:'Какая методика Савенкова оценивает склонности по сферам?',opts:['Карта одаренности','Шкалы Векслера','Тест Торренса'],correct:0}}},
- {id:'dungeon2',cx:0,cz:-24,name:'Подземелье Шумаковой',
-  letter:'«Образная и вербальная креативность» (ОВК) Н.Б. Шумаковой выявляет творческий потенциал младших школьников через исследовательскую активность.\n\nВербальная часть: завершение предложений, придумывание рассказов, необычное использование предметов. Образная часть: дорисовывание незаконченных фигур.\n\nКритерии: беглость (количество идей), гибкость (разнообразие категорий), оригинальность (редкость), разработанность (детализация).\n\nАпробация на 200 учащихся показала надежность и валидность; различия между 1-ми 3-ми классами подтверждают чувствительность к возрасту.',
-  npc:{name:'Н.Б. Шумакова',color:[0.6,0.45,0.85],dialog:'Моя ОВК выявляет творческий потенциал. Пройди испытание о критериях креативности.',
+ {id:'dungeon2',name:'Подземелье Шумаковой',
+  letter:'«Образная и вербальная креативность» (ОВК) Н.Б. Шумаковой выявляет творческий потенциал младших школьников.\n\nВербальная часть: завершение предложений, рассказы, необычное использование предметов. Образная часть: дорисовывание фигур.\n\nКритерии: беглость, гибкость, оригинальность, разработанность.\n\nПодсказка: ищи критерии креативности в письме.',
+  npc:{name:'Стражник Шумаковой',color:[0.6,0.45,0.85],dialog:'Я стражник. В письме — об ОВК. Какие критерии она оценивает?',
   quiz:{q:'Какие критерии оценивает ОВК Шумаковой?',opts:['Беглость, гибкость, оригинальность, разработанность','Только IQ','Только память'],correct:0}}},
- {id:'tests',cx:24,cz:0,name:'Остров Тестов',
-  letter:'Тесты интеллекта: шкалы Векслера (WPPSI, WISC) — вербальные и невербальные субтесты, общий IQ и профиль; прогрессивные матрицы Равена — закономерности и логика; тест Амтхауэра (адаптация Дружинина) — субтесты на аналогии, обобщение, память, арифметику, пространство; ШТУР (Гуревич, Акимова) — осведомленность, аналогии, классификация, обобщение.\n\nТесты креативности: Дж. Гилфорд — дивергентное мышление; П. Торренс (адаптация Туник, Авериной, Щеблановой) — вербальная и образная батареи; Медник (адаптация Дружинина) — ассоциативные тройки слов.',
-  npc:{name:'В.Н. Дружинин',color:[0.3,0.6,0.8],dialog:'Я исследовал интеллект и креативность. Пройди испытание о тестах.',
+ {id:'tests',name:'Остров Тестов',
+  letter:'Тесты интеллекта: шкалы Векслера (WPPSI, WISC) — вербальные и невербальные субтесты, общий IQ и профиль; матрицы Равена; тест Амтхауэра; ШТУР.\n\nТесты креативности: Гилфорд, Торренс, Медник.\n\nПодсказка: ищи, какой тест измеряет IQ через вербальные и невербальные субтесты.',
+  npc:{name:'Стражник Дружинина',color:[0.3,0.6,0.8],dialog:'Я стражник. В письме — о тестах. Какой тест измеряет IQ через субтесты?',
   quiz:{q:'Какой тест измеряет IQ через вербальные и невербальные субтесты?',opts:['Шкалы Векслера','Тест Медника','Опросник Лосевой'],correct:0}}},
- {id:'final',cx:0,cz:24,name:'Остров Итогов',
-  letter:'Опросник А.А. Лосевой: педагоги оценивают 10 сфер (интеллектуальная, академическая, творческая, литературная, артистическая, музыкальная, техническая, двигательная, художественная, социальная), строя профиль.\n\nДля педагога главное — структурированное наблюдение в естественной среде и создание условий: обогащенные программы, проекты, олимпиады.\n\nИИ: помогает анализировать данные, оценивать продукты творчества, адаптивно тестировать, но может воспроизводить смещения и не понимает контекст. ИИ — помощник, а не замена педагога.\n\nЗаключение: диагностика — процесс, встроенный в практику; тесты дополняются наблюдением и экспертными оценками.\n\nЛитература: Рабочая концепция одаренности (Богоявленская, 2003); Ратнер, Губайдуллина (2014); Савенков (2018); Шумакова (2004); Шумакова и др. (1991); Дружинин (2007, 2026).',
-  npc:{name:'А.А. Лосева',color:[0.9,0.55,0.3],dialog:'Я разработала опросник для выявления одаренных школьников. Пройди финальное испытание.',
+ {id:'final',name:'Остров Итогов',
+  letter:'Опросник А.А. Лосевой: 10 сфер.\n\nДля педагога главное — наблюдение и создание развивающей среды.\n\nИИ: помощник, а не замена педагога.\n\nЗаключение: диагностика — процесс, встроенный в практику.\n\nПодсказка: что главное в педагогической диагностике одаренности?',
+  npc:{name:'Стражник Лосевой',color:[0.9,0.55,0.3],dialog:'Я стражник. В письме — итоги курса. Что главное в педагогической диагностике?',
   quiz:{q:'Что главное в педагогической диагностике одаренности?',opts:['Только тесты','Наблюдение и создание развивающей среды','Только оценки родителей'],correct:1}}}
 ];
-function locRadius(t){return t==='city'?8:t==='dungeon'?5:6;}
+// Расставляем по большому кольцу
+const RING=34;
+const ringAngles=[0,40,80,120,160,200,240,280,320];
+LOCS.forEach((l,i)=>{
+  const a=ringAngles[i]*Math.PI/180;
+  l.cx=Math.round(RING*Math.sin(a));
+  l.cz=Math.round(RING*Math.cos(a));
+});
+function locRadius(id){return id==='city'?10:(id==='dungeon1'||id==='dungeon2')?7:9;}
 const BASE=8;
 function locTop(x,z){
   for(const l of LOCS){
-    const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+    const r=locRadius(l.id);
     const dx=x-l.cx,dz=z-l.cz;
     if(dx*dx+dz*dz<=r*r){
-      const hill=(l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2')?Math.max(0,Math.round(Math.sin(x*0.5)+Math.cos(z*0.5))):0;
+      const hill=(l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2')?Math.max(0,Math.round(Math.sin(x*0.4)+Math.cos(z*0.4))):0;
       return BASE+hill;
     }
   }
@@ -262,30 +268,17 @@ function locTop(x,z){
 }
 function locAt(x,z){
   for(const l of LOCS){
-    const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+    const r=locRadius(l.id);
     const dx=x-l.cx,dz=z-l.cz;
     if(dx*dx+dz*dz<=r*r)return l;
   }
   return null;
 }
-const chain=['intro','approaches','factors','herzen','city','dungeon1','dungeon2','tests','final'];
+// Мосты: цепочка
 const bridges=[];
-for(let i=0;i<chain.length-1;i++){
-  const a=LOCS.find(l=>l.id===chain[i]);
-  const b=LOCS.find(l=>l.id===chain[i+1]);
-  bridges.push({x1:a.cx,z1:a.cz,x2:b.cx,z2:b.cz,req:'t'+(i+1)});
+for(let i=0;i<LOCS.length-1;i++){
+  bridges.push({x1:LOCS[i].cx,z1:LOCS[i].cz,x2:LOCS[i+1].cx,z2:LOCS[i+1].cz,req:'t'+(i+1)});
 }
-const shortcuts=[
- {x1:-14,z1:-14,x2:-14,z2:14,req:'t8'},
- {x1:0,z1:0,x2:-14,z2:-14,req:'t8'},
- {x1:0,z1:0,x2:14,z2:-14,req:'t8'},
- {x1:0,z1:0,x2:14,z2:14,req:'t8'},
- {x1:0,z1:0,x2:-14,z2:14,req:'t8'},
- {x1:0,z1:0,x2:0,z2:-24,req:'t8'},
- {x1:0,z1:0,x2:24,z2:0,req:'t8'},
- {x1:0,z1:0,x2:0,z2:24,req:'t8'}
-];
-shortcuts.forEach(s=>bridges.push(s));
 bridges.forEach(b=>{b.locked=true;});
 function bridgeTop(x,z){
   for(const b of bridges){
@@ -296,7 +289,7 @@ function bridgeTop(x,z){
     if(t<0||t>1)continue;
     const px=b.x1+t*dx,pz=b.z1+t*dz;
     const d2=(x-px)*(x-px)+(z-pz)*(z-pz);
-    if(d2<=1.44)return BASE;
+    if(d2<=2.25)return BASE;
   }
   return null;
 }
@@ -310,9 +303,9 @@ function cube(x,y,z,m){
   world.addChild(b);
 }
 
-// Строим локации
-for(let x=-32;x<32;x++){
-  for(let z=-32;z<32;z++){
+// Строим локации (большие)
+for(let x=-45;x<45;x++){
+  for(let z=-45;z<45;z++){
     const l=locAt(x,z);
     if(!l)continue;
     const top=locTop(x,z);
@@ -320,7 +313,7 @@ for(let x=-32;x<32;x++){
       const isTop=(y===top);
       let m;
       if(l.id==='dungeon1'||l.id==='dungeon2')m=darkStone;
-      else m=isTop?(Math.random()<0.35?grassMat:stoneMat):dirtMat;
+      else m=isTop?(Math.random()<0.4?grassMat:stoneMat):dirtMat;
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
         if(Math.random()<0.4){
@@ -340,16 +333,16 @@ for(let x=-32;x<32;x++){
         }
       }
     }
-    const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+    const r=locRadius(l.id);
     const dx=x-l.cx,dz=z-l.cz;
     const dist=Math.sqrt(dx*dx+dz*dz);
     if(dist>r-1.5&&Math.random()<0.15){
-      cube(x,top+1,z,Math.random()<0.5?goldMat:rustMat);
+      cube(x,top+1,z,Math.random()<0.5?goldMat:dirtMat);
     }
   }
 }
 LOCS.forEach(l=>{
-  const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+  const r=locRadius(l.id);
   const base=new pc.Entity();
   base.addComponent('render',{type:'cone',material:darkStone});
   base.setLocalPosition(l.cx,BASE-5,l.cz);
@@ -358,18 +351,23 @@ LOCS.forEach(l=>{
   world.addChild(base);
 });
 
-// Мосты
+// Мосты: широкие, с барьерами
 bridges.forEach(b=>{
   const dx=b.x2-b.x1,dz=b.z2-b.z1;
   const len=Math.sqrt(dx*dx+dz*dz);
   const steps=Math.round(len);
+  const nx=dx/len,nz=dz/len;
+  const px=-nz,pz=nx; // перпендикуляр
   for(let i=0;i<=steps;i++){
     const t=i/steps;
-    const x=Math.round(b.x1+dx*t);
-    const z=Math.round(b.z1+dz*t);
-    cube(x,BASE,z,stoneMat);
+    const x=b.x1+dx*t;
+    const z=b.z1+dz*t;
+    // 2 блока в ширину
+    cube(Math.round(x+px*0.5),BASE,Math.round(z+pz*0.5),stoneMat);
+    cube(Math.round(x-px*0.5),BASE,Math.round(z-pz*0.5),stoneMat);
     if(i%4===0){
-      cube(x,BASE+1,z,copperMat);
+      cube(Math.round(x+px*0.5),BASE+1,Math.round(z+pz*0.5),woodMat);
+      cube(Math.round(x-px*0.5),BASE+1,Math.round(z-pz*0.5),woodMat);
     }
   }
   if(b.req){
@@ -377,7 +375,7 @@ bridges.forEach(b=>{
     const bar=new pc.Entity('barrier');
     bar.addComponent('render',{type:'box',material:redMat});
     bar.setLocalPosition(mx,BASE+1,mz);
-    bar.setLocalScale(1.4,1.4,1.4);
+    bar.setLocalScale(1.6,1.6,1.6);
     world.addChild(bar);
     b.barrier=bar;
   }
@@ -399,11 +397,12 @@ function house(x,z){
     cube(x+dx,BASE+4,z+dz,dirtMat);
   }
 }
-house(-4,-4);house(4,-4);house(0,5);
+const cityLoc=LOCS.find(l=>l.id==='city');
+house(cityLoc.cx-4,cityLoc.cz-4);house(cityLoc.cx+4,cityLoc.cz-4);house(cityLoc.cx,cityLoc.cz+5);
 
 // Подземелья
 LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
-  const r=5;
+  const r=7;
   for(let x=l.cx-r;x<=l.cx+r;x++){
     for(let z=l.cz-r;z<=l.cz+r;z++){
       const dx=x-l.cx,dz=z-l.cz;
@@ -414,7 +413,7 @@ LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
       }
     }
   }
-  for(let i=0;i<2;i++){
+  for(let i=0;i<3;i++){
     const a=Math.random()*Math.PI*2;
     const rr=2+Math.random()*(r-3);
     const x=Math.round(l.cx+Math.cos(a)*rr);
@@ -422,7 +421,7 @@ LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
     const g=new pc.Entity('torch');
     const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
     const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
+    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:12});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
     g.setLocalPosition(x,BASE+0.5,z);
     world.addChild(g);
   }
@@ -441,22 +440,22 @@ function voxelTree(x,z,leafM){
   }
 }
 LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
-  for(let i=0;i<4;i++){
+  for(let i=0;i<6;i++){
     const a=Math.random()*Math.PI*2;
-    const r=2+Math.random()*(locRadius('story')-3);
+    const r=3+Math.random()*(locRadius(l.id)-4);
     const x=Math.round(l.cx+Math.cos(a)*r);
     const z=Math.round(l.cz+Math.sin(a)*r);
-    if(Math.abs(x-l.cx)<2&&Math.abs(z-l.cz)<2)continue;
+    if(Math.abs(x-l.cx)<3&&Math.abs(z-l.cz)<3)continue;
     voxelTree(x,z,leafMat);
   }
 });
 
 // Кусты, лампы, ящики
 LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
-  const r=locRadius(l.id==='city'?'city':'story');
-  for(let i=0;i<3;i++){
+  const r=locRadius(l.id);
+  for(let i=0;i<5;i++){
     const a=Math.random()*Math.PI*2;
-    const rr=2+Math.random()*(r-2);
+    const rr=3+Math.random()*(r-3);
     const x=Math.round(l.cx+Math.cos(a)*rr);
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
@@ -467,9 +466,9 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     b.setLocalScale(0.7,0.5,0.7);
     world.addChild(b);
   }
-  for(let i=0;i<2;i++){
+  for(let i=0;i<3;i++){
     const a=Math.random()*Math.PI*2;
-    const rr=2+Math.random()*(r-2);
+    const rr=3+Math.random()*(r-3);
     const x=Math.round(l.cx+Math.cos(a)*rr);
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
@@ -477,13 +476,13 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const g=new pc.Entity('lamp');
     const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
     const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.2,range:8});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
+    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.2,range:10});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
     g.setLocalPosition(x,top+0.5,z);
     world.addChild(g);
   }
-  for(let i=0;i<2;i++){
+  for(let i=0;i<3;i++){
     const a=Math.random()*Math.PI*2;
-    const rr=2+Math.random()*(r-2);
+    const rr=3+Math.random()*(r-3);
     const x=Math.round(l.cx+Math.cos(a)*rr);
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
@@ -498,16 +497,16 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
 
 // Облака
 const clouds=[];
-for(let i=0;i<8;i++){
+for(let i=0;i<10;i++){
   const c=new pc.Entity('cloud');
   c.addComponent('render',{type:'box',material:cloudMat});
-  c.setLocalPosition((Math.random()-0.5)*80,0+Math.random()*2,(Math.random()-0.5)*80);
-  c.setLocalScale(5+Math.random()*4,0.5,2+Math.random()*2);
+  c.setLocalPosition((Math.random()-0.5)*100,0+Math.random()*2,(Math.random()-0.5)*100);
+  c.setLocalScale(6+Math.random()*4,0.5,3+Math.random()*2);
   world.addChild(c);
   clouds.push({e:c,speed:0.4+Math.random()*0.6});
 }
 
-// Письма
+// Письма (подсказки)
 const letterBlocks=[];
 LOCS.forEach((l,i)=>{
   const top=groundTop(l.cx,l.cz);
@@ -523,9 +522,9 @@ LOCS.forEach((l,i)=>{
 // Сундуки
 const chests=[];
 function addChest(l){
-  const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+  const r=locRadius(l.id);
   const a=Math.random()*Math.PI*2;
-  const rr=2+Math.random()*(r-3);
+  const rr=3+Math.random()*(r-4);
   const x=Math.round(l.cx+Math.cos(a)*rr);
   const z=Math.round(l.cz+Math.sin(a)*rr);
   const top=groundTop(x,z);
@@ -540,17 +539,18 @@ function addChest(l){
 }
 LOCS.forEach(addChest);
 
-// NPC с испытаниями
-const npcs=[];
+// Стражники (NPC) у мостов
+const guards=[];
 LOCS.forEach((l,i)=>{
-  const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
-  const a=Math.random()*Math.PI*2;
-  const rr=2+Math.random()*(r-3);
-  const x=Math.round(l.cx+Math.cos(a)*rr);
-  const z=Math.round(l.cz+Math.sin(a)*rr);
-  const top=groundTop(x,z);
-  if(top==null)return;
-  const g=new pc.Entity('npc_'+i);
+  const r=locRadius(l.id);
+  const next=LOCS[(i+1)%LOCS.length];
+  const dx=next.cx-l.cx,dz=next.cz-l.cz;
+  const len=Math.sqrt(dx*dx+dz*dz);
+  const ux=dx/len,uz=dz/len;
+  const gx=Math.round(l.cx+ux*(r-1.5));
+  const gz=Math.round(l.cz+uz*(r-1.5));
+  const top=groundTop(gx,gz)??BASE;
+  const g=new pc.Entity('guard_'+i);
   const body=new pc.Entity();body.addComponent('render',{type:'box',material:mat(l.npc.color)});body.setLocalPosition(0,0.75,0);body.setLocalScale(0.55,0.9,0.35);g.addChild(body);
   const head=new pc.Entity();head.addComponent('render',{type:'box',material:mat([0.9,0.75,0.6])});head.setLocalPosition(0,1.45,0);head.setLocalScale(0.45,0.45,0.45);g.addChild(head);
   const eye1=new pc.Entity();eye1.addComponent('render',{type:'box',material:mat([0.1,0.1,0.1])});eye1.setLocalPosition(-0.1,1.5,0.23);eye1.setLocalScale(0.08,0.08,0.02);g.addChild(eye1);
@@ -558,10 +558,14 @@ LOCS.forEach((l,i)=>{
   const arm1=new pc.Entity();arm1.addComponent('render',{type:'box',material:mat(l.npc.color)});arm1.setLocalPosition(-0.35,0.9,0);arm1.setLocalScale(0.15,0.6,0.15);g.addChild(arm1);
   const arm2=new pc.Entity();arm2.addComponent('render',{type:'box',material:mat(l.npc.color)});arm2.setLocalPosition(0.35,0.9,0);arm2.setLocalScale(0.15,0.6,0.15);g.addChild(arm2);
   const hat=new pc.Entity();hat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});hat.setLocalPosition(0,1.75,0);hat.setLocalScale(0.55,0.15,0.55);g.addChild(hat);
-  g.setLocalPosition(x,top+0.5,z);
-  g.userData={npc:true,loc:i,alive:true};
+  const spear=new pc.Entity();spear.addComponent('render',{type:'box',material:trunkMat});spear.setLocalPosition(0.45,1.0,0.2);spear.setLocalScale(0.1,1.2,0.1);g.addChild(spear);
+  g.setLocalPosition(gx,top+0.5,gz);
+  // Позиция в стороне (когда пропустил)
+  const sx=Math.round(gx+(-uz)*3);
+  const sz=Math.round(gz+(ux)*3);
+  g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0}};
   world.addChild(g);
-  npcs.push(g);
+  guards.push(g);
 });
 
 // Типы блоков
@@ -581,9 +585,9 @@ for(let i=1;i<=9;i++)tasks['t'+i]=false;
 const ores=[];
 
 function randPosOnLoc(l){
-  const r=locRadius(l.id==='city'?'city':l.id.startsWith('dungeon')?'dungeon':'story');
+  const r=locRadius(l.id);
   const a=Math.random()*Math.PI*2;
-  const rr=2+Math.random()*(r-2);
+  const rr=3+Math.random()*(r-3);
   const x=Math.round(l.cx+Math.cos(a)*rr);
   const z=Math.round(l.cz+Math.sin(a)*rr);
   return [x,groundTop(x,z),z];
@@ -623,7 +627,7 @@ function tasksDoneCount(){
   let n=0;for(let i=1;i<=9;i++)if(tasks['t'+i])n++;return n;
 }
 
-const quests=LOCS.map((l,i)=>({text:'Пройти испытание: '+l.name,done:()=>tasks['t'+(i+1)]}));
+const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: найди письмо с подсказкой, поговори со стражником и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
 function renderQuests(){
   const ul=document.getElementById('questList');
   ul.innerHTML='';
@@ -681,7 +685,7 @@ player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,start
 world.addChild(player);
 
 // Камера
-let yaw=0,pitch=0.5,dist=10;
+let yaw=0,pitch=0.5,dist=12;
 function updateCamera(){
   const p=player.getLocalPosition();
   const x=p.x+dist*Math.sin(yaw)*Math.cos(pitch);
@@ -803,20 +807,21 @@ function mineAt(cx,cy){
 let near=null;
 function findNear(){
   const p=player.getLocalPosition();
-  let best=null,bestD=2.5;
+  let best=null,bestD=3;
   const check=(o)=>{
     if(!o.userData.alive)return;
     const d=o.getLocalPosition().distance(p);
     if(d<bestD){best=o;bestD=d;}
   };
   chests.forEach(check);
-  npcs.forEach(check);
+  guards.forEach(check);
   return best;
 }
-function openQuiz(loc){
-  const q=loc.npc.quiz;
-  document.getElementById('npcName').textContent=loc.npc.name;
-  document.getElementById('npcText').textContent=loc.npc.dialog;
+function openQuiz(guard){
+  const l=LOCS[guard.userData.loc];
+  const q=l.npc.quiz;
+  document.getElementById('npcName').textContent=l.npc.name;
+  document.getElementById('npcText').textContent=l.npc.dialog+' Найди письмо на острове — там подсказка.';
   document.getElementById('quizQ').textContent=q.q;
   const opts=document.getElementById('quizOpts');
   opts.innerHTML='';
@@ -826,16 +831,32 @@ function openQuiz(loc){
     btn.addEventListener('click',()=>{
       if(i===q.correct){
         document.getElementById('npcModal').classList.remove('show');
-        const idx=LOCS.indexOf(loc)+1;
+        const idx=guard.userData.loc+1;
         tasks['t'+idx]=true;
         unlockBridges('t'+idx);
-        toast('Испытание пройдено! Мост открыт.');
+        guard.userData.passed=true;
+        toast('Испытание пройдено! Стражник пропускает вас.');
         updateHUD();
         if(idx===9){
           setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
         }
       }else{
-        toast('Неверно. Попробуйте ещё.');
+        // Стражник бьёт
+        hearts-=1;
+        flash();
+        toast('Неверно! Стражник ударил вас. -1 сердце');
+        const p=player.getLocalPosition();
+        const gp=guard.getLocalPosition();
+        const dx=p.x-gp.x,dz=p.z-gp.z;
+        const len=Math.sqrt(dx*dx+dz*dz)||1;
+        guard.userData.lungeT=0.6;
+        guard.userData.lungeDir={x:dx/len,z:dz/len};
+        updateHUD();
+        if(hearts<=0){
+          gameOver=true;
+          document.getElementById('finalScore').textContent=score;
+          document.getElementById('gameover').classList.add('show');
+        }
       }
     });
     opts.appendChild(btn);
@@ -855,7 +876,7 @@ function interact(){
       toast('Сундук пуст.');
     }
   }else if(near.userData.npc){
-    openQuiz(LOCS[near.userData.loc]);
+    openQuiz(near);
   }
   updateHUD();
 }
@@ -904,6 +925,7 @@ document.getElementById('restart').addEventListener('click',()=>{
       if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);
     }
   });
+  guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;});
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
   toast('Игра начата заново.');
@@ -944,13 +966,29 @@ app.on('update',dt=>{
   const targetY=(groundTop(p.x,p.z)??BASE)+0.5;
   player.setLocalPosition(p.x,p.y+(targetY-p.y)*0.2,p.z);
   updateCamera();
+  // Стражники
+  guards.forEach(g=>{
+    const u=g.userData;
+    if(u.passed){
+      const gp=g.getLocalPosition();
+      const tx=u.side.x, tz=u.side.z;
+      g.setLocalPosition(gp.x+(tx-gp.x)*0.05,gp.y,gp.z+(tz-gp.z)*0.05);
+    }else if(u.lungeT>0){
+      const gp=g.getLocalPosition();
+      g.setLocalPosition(gp.x+u.lungeDir.x*3*dt,gp.y,gp.z+u.lungeDir.z*3*dt);
+      u.lungeT-=dt;
+    }else{
+      const gp=g.getLocalPosition();
+      g.setLocalPosition(gp.x+(u.base.x-gp.x)*0.05,gp.y,gp.z+(u.base.z-gp.z)*0.05);
+    }
+  });
   near=findNear();
   const prompt=document.getElementById('prompt');
   const actionBtn=document.getElementById('actionBtn');
   if(near){
     prompt.classList.add('show');
     actionBtn.classList.add('show');
-    prompt.textContent=near.userData.chest?'E — открыть сундук':'E — поговорить и пройти испытание';
+    prompt.textContent=near.userData.chest?'E — открыть сундук':'E — поговорить со стражником';
   }else{
     prompt.classList.remove('show');
     actionBtn.classList.remove('show');
@@ -958,7 +996,7 @@ app.on('update',dt=>{
   clouds.forEach(c=>{
     const cp=c.e.getLocalPosition();
     let nx=cp.x+c.speed*dt;
-    if(nx>45)nx=-45;
+    if(nx>55)nx=-55;
     c.e.setLocalPosition(nx,cp.y,cp.z);
   });
 });
