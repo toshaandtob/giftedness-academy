@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Академия знаний — Психолого-педагогическая диагностика одаренности</title>
 <style>
 :root{--gold:#d9a441;--ink:#3b2d20;--danger:#b3573f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;font-family:'Cormorant Garamond',Georgia,serif;color:var(--ink);background:#0e1420}
+html,body{margin:0;height:100%;overflow:hidden;position:fixed;width:100%;font-family:'Cormorant Garamond',Georgia,serif;color:var(--ink);background:#0e1420;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 #app{position:fixed;inset:0}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .hud{position:fixed;inset:0;pointer-events:none;z-index:10}
@@ -26,7 +26,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .icon.backpack{background:linear-gradient(135deg,#a1887f,#5d4037)}
 .icon.letter{background:linear-gradient(135deg,#fff8e1,#d9a441)}
 .pad{position:absolute;left:20px;bottom:20px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;pointer-events:auto}
-.pad button{background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;user-select:none;touch-action:none}
+.pad button{background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;user-select:none;touch-action:none;-webkit-user-select:none}
 .pad .up{grid-column:2;grid-row:1}
 .pad .left{grid-column:1;grid-row:2}
 .pad .down{grid-column:2;grid-row:3}
@@ -75,7 +75,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
 .gameover p{margin:.3rem 0}
 .gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
-@media(max-width:520px){.slot{width:48px;height:48px}.slot .icon{width:28px;height:28px;font-size:16px}.panel{max-width:230px;font-size:.85rem}.hearts{bottom:150px;font-size:18px}.pad button{width:44px;height:44px}.modal .box{padding:1rem;max-width:92vw}}
+/* Мобильная адаптация: всё компактнее */
+@media(max-width:520px){
+  .slot{width:44px;height:44px}
+  .slot .icon{width:24px;height:24px;font-size:14px}
+  .slot .count{font-size:11px}
+  .panel{max-width:200px;font-size:.8rem;padding:.4rem .6rem}
+  .panel h1{font-size:.9rem}
+  .panel-body p{font-size:.8rem}
+  .hearts{bottom:120px;font-size:16px;gap:2px}
+  .pad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:3px;left:10px;bottom:10px}
+  .pad button{width:40px;height:40px;font-size:16px}
+  .hotbar{right:10px;bottom:10px;padding:6px;gap:6px}
+  .actionBtn{bottom:70px;padding:.5rem 1rem;font-size:.9rem}
+  .prompt{bottom:130px;font-size:.85rem;padding:.3rem .6rem}
+  .modal .box{padding:1rem;max-width:92vw}
+  .crosshair{width:18px;height:18px}
+  .topbar{left:8px;top:8px;right:8px}
+}
 </style>
 </head>
 <body>
@@ -174,6 +191,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <script>
 (function(){
 'use strict';
+// Фиксируем ориентацию (если браузер поддерживает)
+if(screen.orientation&&screen.orientation.lock){
+  screen.orientation.lock('portrait').catch(()=>{});
+}
 const canvas=document.createElement('canvas');
 document.getElementById('app').appendChild(canvas);
 
@@ -623,22 +644,17 @@ LOCS.forEach((l,i)=>{
   letterBlocks.push(e);
 });
 
-// Обелиски — меньше и детализированнее
 const beacons=[];
 function addBeacon(l,i){
   const top=groundTop(l.cx,l.cz);
   const b=new pc.Entity('beacon_'+i);
-  // Основание
   const base=new pc.Entity();base.addComponent('render',{type:'box',material:darkStone});base.setLocalPosition(0,0.15,0);base.setLocalScale(1.2,0.3,1.2);b.addChild(base);
-  // Колонна (3 сегмента)
   for(let dy=0;dy<3;dy++){
     const c=new pc.Entity();c.addComponent('render',{type:'box',material:darkStone});c.setLocalPosition(0,0.45+dy*0.6,0);c.setLocalScale(0.5,0.6,0.5);b.addChild(c);
   }
-  // Кольца-украшения
   for(let dy=0;dy<3;dy++){
     const ring=new pc.Entity();ring.addComponent('render',{type:'box',material:goldMat});ring.setLocalPosition(0,0.45+dy*0.6,0);ring.setLocalScale(0.65,0.1,0.65);b.addChild(ring);
   }
-  // Вершина с лампой
   const top2=new pc.Entity();top2.addComponent('render',{type:'box',material:lampMat});top2.setLocalPosition(0,2.25,0);top2.setLocalScale(0.4,0.4,0.4);b.addChild(top2);
   const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:2,range:12});pl.setLocalPosition(0,2.25,0);b.addChild(pl);
   b.setLocalPosition(l.cx,top+0.5,l.cz);
@@ -878,6 +894,7 @@ function bindPad(){
     btn.addEventListener('touchstart',start,{passive:false});
     btn.addEventListener('touchend',end,{passive:false});
     btn.addEventListener('touchcancel',end,{passive:false});
+    btn.addEventListener('contextmenu',e=>e.preventDefault());
   });
 }
 bindPad();
@@ -934,7 +951,6 @@ function mineAt(cx,cy){
     document.getElementById('letterModal').classList.add('show');
     lettersRead++;
     if(!collectedLetters.includes(best.userData.loc))collectedLetters.push(best.userData.loc);
-    // Стражник этого острова: задание 2 выполнено
     guards.forEach(g=>{
       if(g.userData.stage===1&&g.userData.loc===best.userData.loc){
         g.userData.stage=2;
@@ -1076,7 +1092,6 @@ function interact(){
     document.getElementById('letterTitle').textContent='Маяк знаний: '+l.name;
     document.getElementById('letterText').textContent=l.letter;
     document.getElementById('letterModal').classList.add('show');
-    // Стражник этого острова: задание 1 выполнено
     guards.forEach(g=>{
       if(g.userData.stage===0&&g.userData.loc===near.userData.loc){
         g.userData.stage=1;
