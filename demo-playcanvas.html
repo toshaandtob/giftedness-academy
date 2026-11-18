@@ -278,18 +278,18 @@ for(let x=-30;x<30;x++){
     for(let y=BASE-3;y<=top;y++){
       const isTop=(y===top);
       let m;
-      if(isl.type==='dungeon')m=isTop?darkMetal:darkMetal;
-      else m=isTop?(Math.random()<0.25?grassMat:metalMat):darkMetal;
+      if(isl.type==='dungeon')m=darkMetal;
+      else m=isTop?(Math.random()<0.35?grassMat:metalMat):darkMetal;
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
-        if(Math.random()<0.3){
+        if(Math.random()<0.4){
           const t=new pc.Entity();
           t.addComponent('render',{type:'box',material:leafMat});
           t.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.55,z+(Math.random()-0.5)*0.6);
           t.setLocalScale(0.08,0.35,0.08);
           world.addChild(t);
         }
-        if(isl.type==='story'&&Math.random()<0.06){
+        if(isl.type==='story'&&Math.random()<0.08){
           const f=new pc.Entity();
           const fm=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95])][Math.floor(Math.random()*3)];
           f.addComponent('render',{type:'box',material:fm});
@@ -299,7 +299,6 @@ for(let x=-30;x<30;x++){
         }
       }
     }
-    // Медные акценты
     const r=islandRadius(isl.type);
     const dx=x-isl.cx,dz=z-isl.cz;
     const dist=Math.sqrt(dx*dx+dz*dz);
@@ -308,7 +307,6 @@ for(let x=-30;x<30;x++){
     }
   }
 }
-// Основания островов
 islands.forEach(isl=>{
   const r=islandRadius(isl.type);
   const base=new pc.Entity();
@@ -335,7 +333,7 @@ bridges.forEach(b=>{
   }
 });
 
-// Город: дома
+// Город: дома, бочки, таблички
 function house(x,z){
   for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
     cube(x+dx,BASE,z+dz,metalMat);
@@ -352,8 +350,34 @@ function house(x,z){
   }
 }
 house(-4,-4);house(4,-4);house(0,5);
+// Бочки
+for(let i=0;i<3;i++){
+  const a=Math.random()*Math.PI*2;
+  const rr=3+Math.random()*3;
+  const x=Math.round(Math.cos(a)*rr);
+  const z=Math.round(Math.sin(a)*rr);
+  const top=groundTop(x,z);
+  if(top==null)continue;
+  const barrel=new pc.Entity('barrel');
+  barrel.addComponent('render',{type:'cylinder',material:crateMat});
+  barrel.setLocalPosition(x,top+0.4,z);
+  barrel.setLocalScale(0.5,0.8,0.5);
+  world.addChild(barrel);
+}
+// Таблички
+for(let i=0;i<2;i++){
+  const x=i?3:-3;
+  const z=i?-6:6;
+  const top=groundTop(x,z);
+  if(top==null)continue;
+  const sign=new pc.Entity('sign');
+  const post=new pc.Entity();post.addComponent('render',{type:'box',material:trunkMat});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.12,1.5,0.12);sign.addChild(post);
+  const board=new pc.Entity();board.addComponent('render',{type:'box',material:copperMat});board.setLocalPosition(0,1.4,0);board.setLocalScale(0.9,0.5,0.08);sign.addChild(board);
+  sign.setLocalPosition(x,top+0.5,z);
+  world.addChild(sign);
+}
 
-// Подземелья: стены и факелы
+// Подземелья
 islands.filter(i=>i.type==='dungeon').forEach(isl=>{
   const r=islandRadius('dungeon');
   for(let x=isl.cx-r;x<=isl.cx+r;x++){
@@ -380,7 +404,7 @@ islands.filter(i=>i.type==='dungeon').forEach(isl=>{
   }
 });
 
-// Воксельные деревья (квадратные)
+// Воксельные деревья
 function voxelTree(x,z,leafM){
   const top=groundTop(x,z);
   if(top==null)return;
@@ -409,6 +433,24 @@ islands.filter(i=>i.type==='city').forEach(isl=>{
     const x=Math.round(isl.cx+Math.cos(a)*r);
     const z=Math.round(isl.cz+Math.sin(a)*r);
     voxelTree(x,z,Math.random()<0.5?leafMat:leafPink);
+  }
+});
+
+// Кусты
+islands.filter(i=>i.type==='story'||i.type==='city').forEach(isl=>{
+  const r=islandRadius(isl.type);
+  for(let i=0;i<3;i++){
+    const a=Math.random()*Math.PI*2;
+    const rr=2+Math.random()*(r-2);
+    const x=Math.round(isl.cx+Math.cos(a)*rr);
+    const z=Math.round(isl.cz+Math.sin(a)*rr);
+    const top=groundTop(x,z);
+    if(top==null)continue;
+    const b=new pc.Entity('bush');
+    b.addComponent('render',{type:'box',material:leafMat});
+    b.setLocalPosition(x,top+0.3,z);
+    b.setLocalScale(0.7,0.5,0.7);
+    world.addChild(b);
   }
 });
 
@@ -455,7 +497,7 @@ for(let i=0;i<6;i++){
   clouds.push({e:c,speed:0.4+Math.random()*0.6});
 }
 
-// Письма (только на островах истории)
+// Письма
 const letterBlocks=[];
 islands.filter(i=>i.type==='story').forEach((isl,i)=>{
   const top=groundTop(isl.cx,isl.cz);
@@ -471,8 +513,8 @@ islands.filter(i=>i.type==='story').forEach((isl,i)=>{
 // Сундуки
 const chests=[];
 function addChest(isl){
-  const a=Math.random()*Math.PI*2;
   const r=islandRadius(isl.type);
+  const a=Math.random()*Math.PI*2;
   const rr=2+Math.random()*(r-3);
   const x=Math.round(isl.cx+Math.cos(a)*rr);
   const z=Math.round(isl.cz+Math.sin(a)*rr);
@@ -500,8 +542,8 @@ const npcData=[
   {name:'Мэр Коготь',color:[0.8,0.3,0.3],dialog:'Добро пожаловать в Город Механикум. Здесь можно передохнуть, открыть сундуки и получить подсказки.'}
 ];
 function addNpc(isl,def){
-  const a=Math.random()*Math.PI*2;
   const r=islandRadius(isl.type);
+  const a=Math.random()*Math.PI*2;
   const rr=2+Math.random()*(r-3);
   const x=Math.round(isl.cx+Math.cos(a)*rr);
   const z=Math.round(isl.cz+Math.sin(a)*rr);
@@ -512,6 +554,13 @@ function addNpc(isl,def){
   const head=new pc.Entity();head.addComponent('render',{type:'box',material:mat([0.9,0.75,0.6])});head.setLocalPosition(0,1.45,0);head.setLocalScale(0.45,0.45,0.45);g.addChild(head);
   const eye1=new pc.Entity();eye1.addComponent('render',{type:'box',material:mat([0.1,0.1,0.1])});eye1.setLocalPosition(-0.1,1.5,0.23);eye1.setLocalScale(0.08,0.08,0.02);g.addChild(eye1);
   const eye2=new pc.Entity();eye2.addComponent('render',{type:'box',material:mat([0.1,0.1,0.1])});eye2.setLocalPosition(0.1,1.5,0.23);eye2.setLocalScale(0.08,0.08,0.02);g.addChild(eye2);
+  // Руки
+  const arm1=new pc.Entity();arm1.addComponent('render',{type:'box',material:mat(def.color)});arm1.setLocalPosition(-0.35,0.9,0);arm1.setLocalScale(0.15,0.6,0.15);g.addChild(arm1);
+  const arm2=new pc.Entity();arm2.addComponent('render',{type:'box',material:mat(def.color)});arm2.setLocalPosition(0.35,0.9,0);arm2.setLocalScale(0.15,0.6,0.15);g.addChild(arm2);
+  // Шляпа
+  const hat=new pc.Entity();hat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});hat.setLocalPosition(0,1.75,0);hat.setLocalScale(0.55,0.15,0.55);g.addChild(hat);
+  // Инструмент
+  const tool=new pc.Entity();tool.addComponent('render',{type:'box',material:copperMat});tool.setLocalPosition(0.45,1.0,0.2);tool.setLocalScale(0.1,0.4,0.1);g.addChild(tool);
   g.setLocalPosition(x,top+0.5,z);
   g.userData={npc:true,name:def.name,dialog:def.dialog,alive:true};
   world.addChild(g);
@@ -627,6 +676,14 @@ const phead=new pc.Entity();phead.addComponent('render',{type:'box',material:mat
 for(let i=0;i<2;i++){
   const leg=new pc.Entity();leg.addComponent('render',{type:'box',material:mat([0.25,0.3,0.5])});leg.setLocalPosition(i?0.15:-0.15,0.25,0);leg.setLocalScale(0.2,0.5,0.2);player.addChild(leg);
 }
+// Руки
+for(let i=0;i<2;i++){
+  const arm=new pc.Entity();arm.addComponent('render',{type:'box',material:mat([0.3,0.6,0.8])});arm.setLocalPosition(i?0.35:-0.35,0.9,0);arm.setLocalScale(0.15,0.6,0.15);player.addChild(arm);
+}
+// Шляпа
+const phat=new pc.Entity();phat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});phat.setLocalPosition(0,1.75,0);phat.setLocalScale(0.55,0.15,0.55);player.addChild(phat);
+// Ремень
+const pbelt=new pc.Entity();pbelt.addComponent('render',{type:'box',material:mat([0.25,0.2,0.15])});pbelt.setLocalPosition(0,0.45,0);pbelt.setLocalScale(0.6,0.1,0.4);player.addChild(pbelt);
 const startIsl=islands[0];
 player.setLocalPosition(startIsl.cx,groundTop(startIsl.cx,startIsl.cz)+0.5,startIsl.cz);
 world.addChild(player);
@@ -869,7 +926,6 @@ app.on('update',dt=>{
   const targetY=(groundTop(p.x,p.z)??BASE)+0.5;
   player.setLocalPosition(p.x,p.y+(targetY-p.y)*0.2,p.z);
   updateCamera();
-  // Посещение локаций
   const cur=islandAt(p.x,p.z);
   if(cur){
     if(cur.type==='city')visitedCity=true;
