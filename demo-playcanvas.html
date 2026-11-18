@@ -160,7 +160,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица (как в Minecraft). <b>ЛКМ</b> — добыть блок. <b>ПКМ</b> — поставить выбранный блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p>В шахту можно спуститься по каменной лестнице из блоков. Шахта большая, с рудой и факелами.</p>
+    <p>Выберите блок в хотбаре (золото/кристалл/руна/семя), затем ПКМ — поставить блок. На каждом острове: обелиск → стражник → мини-игра.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -389,42 +389,8 @@ function bridgeTop(x,z){
   }
   return null;
 }
-const MINE_HALF=6;
-function mineCenter(l){return {x:l.minePos.x+3,z:l.minePos.z};}
-function mineTop(x,z){
-  for(const l of LOCS){
-    const c=mineCenter(l);
-    const dx=x-c.x,dz=z-c.z;
-    if(Math.abs(dx)<=MINE_HALF&&Math.abs(dz)<=MINE_HALF)return MINE_Y;
-  }
-  return null;
-}
-function mineWall(x,z){
-  for(const l of LOCS){
-    const c=mineCenter(l);
-    const dx=x-c.x,dz=z-c.z;
-    if(Math.abs(dx)<=MINE_HALF&&Math.abs(dz)<=MINE_HALF){
-      if(Math.abs(dx)===MINE_HALF||Math.abs(dz)===MINE_HALF)return MINE_Y+3;
-    }
-  }
-  return null;
-}
-const stairMap=new Map();
-LOCS.forEach(l=>{
-  const mp=l.minePos;
-  for(let i=0;i<=7;i++){
-    const y=BASE-i;
-    for(let dz=0;dz<2;dz++){
-      stairMap.set(mp.x+','+(mp.z+i+dz),y);
-    }
-  }
-});
-function stairTop(x,z){
-  const y=stairMap.get(x+','+z);
-  return y==null?null:y;
-}
 function groundTop(x,z){
-  return stairTop(x,z)??mineWall(x,z)??mineTop(x,z)??locTop(x,z)??bridgeTop(x,z);
+  return locTop(x,z)??bridgeTop(x,z);
 }
 function cube(x,y,z,m){
   const b=new pc.Entity();
@@ -446,11 +412,10 @@ LOCS.forEach((l,i)=>{
   l.minePos={x:l.cx+3,z:l.cz+3};
   l.gamePos={x:l.cx-3,z:l.cz+3};
   l.oreSpots=[];
-  const c=mineCenter(l);
-  for(let k=0;k<8;k++){
-    const ox=c.x+Math.round((Math.random()-0.5)*8);
-    const oz=c.z+Math.round((Math.random()-0.5)*8);
-    l.oreSpots.push({x:ox,z:oz});
+  for(let k=0;k<4;k++){
+    const oa=k*Math.PI/2+Math.random()*0.5;
+    const orr=1+Math.random()*1.5;
+    l.oreSpots.push({x:Math.round(l.minePos.x+Math.cos(oa)*orr),z:Math.round(l.minePos.z+Math.sin(oa)*orr)});
   }
 });
 
@@ -458,13 +423,12 @@ for(let x=-50;x<50;x++){
   for(let z=-50;z<50;z++){
     const l=locAt(x,z);
     if(!l)continue;
-    const stairY=stairTop(x,z);
-    const top=stairY!=null?stairY:locTop(x,z);
+    const top=locTop(x,z);
     for(let y=BASE-5;y<=top;y++){
       const isTop=(y===top);
-      const m=isTop?(stairY!=null?stoneMat:grassMat):dirtMat;
+      const m=isTop?grassMat:dirtMat;
       cube(x,y,z,m);
-      if(isTop&&stairY==null){
+      if(isTop){
         if(Math.random()<0.85){
           for(let k=0;k<2;k++){
             const t=new pc.Entity();
@@ -578,33 +542,52 @@ LOCS.forEach(l=>{
     const nearGuard=Math.hypot(x-l.guardPos.x,z-l.guardPos.z)<3;
     const nearLetter=Math.hypot(x-(l.cx+2),z-l.cz)<2;
     const nearChest=Math.hypot(x-l.chestPos.x,z-l.chestPos.z)<2;
-    const nearMine=Math.hypot(x-l.minePos.x,z-l.minePos.z)<4;
+    const nearMine=Math.hypot(x-l.minePos.x,z-l.minePos.z)<3;
     const nearGame=Math.hypot(x-l.gamePos.x,z-l.gamePos.z)<3;
     if(nearCenter||nearGuard||nearLetter||nearChest||nearMine||nearGame)continue;
     voxelTree(x,z,leafMat);
   }
 });
 
+const mineEntrances=[];
 LOCS.forEach((l,i)=>{
-  const c=mineCenter(l);
-  for(let dx=-MINE_HALF;dx<=MINE_HALF;dx++)for(let dz=-MINE_HALF;dz<=MINE_HALF;dz++){
-    cube(c.x+dx,MINE_Y,c.z+dz,darkStone);
-    if(Math.abs(dx)===MINE_HALF||Math.abs(dz)===MINE_HALF){
-      cube(c.x+dx,MINE_Y+1,c.z+dz,darkStone);
-      cube(c.x+dx,MINE_Y+2,c.z+dz,darkStone);
+  const mp=l.minePos;
+  const top=groundTop(mp.x,mp.z);
+  if(top==null)return;
+  for(let dx=0;dx<2;dx++)for(let dz=0;dz<2;dz++){
+    cube(mp.x+dx,top,mp.z+dz,darkStone);
+  }
+  const ladder=new pc.Entity('ladder_'+i);
+  for(let dy=0;dy<6;dy++){
+    const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder.addChild(step);
+  }
+  ladder.setLocalPosition(mp.x+0.5,top+0.5,mp.z+0.5);
+  ladder.userData={mine:true,loc:i,alive:true};
+  world.addChild(ladder);
+  mineEntrances.push(ladder);
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    cube(mp.x+dx,MINE_Y,mp.z+dz,darkStone);
+  }
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    if(Math.abs(dx)===2||Math.abs(dz)===2){
+      cube(mp.x+dx,MINE_Y+1,mp.z+dz,darkStone);
+      cube(mp.x+dx,MINE_Y+2,mp.z+dz,darkStone);
     }
   }
-  for(let k=0;k<4;k++){
-    const a=k*Math.PI/2+Math.PI/4;
-    const tx=c.x+Math.round(Math.cos(a)*(MINE_HALF-2));
-    const tz=c.z+Math.round(Math.sin(a)*(MINE_HALF-2));
-    const torch=new pc.Entity('minetorch_'+i+'_'+k);
-    const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);torch.addChild(post);
-    const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);torch.addChild(lamp);
-    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);torch.addChild(pl);
-    torch.setLocalPosition(tx,MINE_Y+0.5,tz);
-    world.addChild(torch);
+  const ladder2=new pc.Entity('ladder2_'+i);
+  for(let dy=0;dy<6;dy++){
+    const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder2.addChild(step);
   }
+  ladder2.setLocalPosition(mp.x+0.5,MINE_Y+0.5,mp.z+0.5);
+  ladder2.userData={mine:true,loc:i,alive:true,underground:true};
+  world.addChild(ladder2);
+  mineEntrances.push(ladder2);
+  const torch=new pc.Entity('minetorch_'+i);
+  const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);torch.addChild(post);
+  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);torch.addChild(lamp);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);torch.addChild(pl);
+  torch.setLocalPosition(mp.x-1,MINE_Y+0.5,mp.z-1);
+  world.addChild(torch);
 });
 
 const gameStations=[];
@@ -1024,11 +1007,12 @@ function mineAt(cx,cy){
   chests.forEach(check);
   guards.forEach(check);
   beacons.forEach(check);
+  mineEntrances.forEach(check);
   apples.forEach(check);
   gameStations.forEach(check);
   chessCells.forEach(check);
   seaCells.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, мини-игры и доски.');return;}
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки, шахты, мини-игры и доски.');return;}
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -1103,6 +1087,18 @@ function mineAt(cx,cy){
   }
   if(best.userData.game){
     openGame(best.userData.gameDef);
+    return;
+  }
+  if(best.userData.mine){
+    const l=LOCS[best.userData.loc];
+    if(best.userData.underground){
+      player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
+      toast('Вы поднялись на поверхность.');
+    }else{
+      player.setLocalPosition(l.minePos.x,MINE_Y+0.5,l.minePos.z);
+      toast('Вы спустились в шахту. Здесь добывается руда.');
+    }
+    updateCamera();
     return;
   }
   if(best.userData.apple){
@@ -1328,6 +1324,7 @@ function findNear(){
   chests.forEach(o=>check(o,3));
   guards.forEach(o=>check(o,3));
   beacons.forEach(o=>check(o,5));
+  mineEntrances.forEach(o=>check(o,3));
   gameStations.forEach(o=>check(o,3));
   return best;
 }
@@ -1348,6 +1345,16 @@ function interact(){
     });
   }else if(near.userData.game){
     openGame(near.userData.gameDef);
+  }else if(near.userData.mine){
+    const l=LOCS[near.userData.loc];
+    if(near.userData.underground){
+      player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
+      toast('Вы поднялись на поверхность.');
+    }else{
+      player.setLocalPosition(l.minePos.x,MINE_Y+0.5,l.minePos.z);
+      toast('Вы спустились в шахту. Здесь добывается руда.');
+    }
+    updateCamera();
   }else if(near.userData.npc){
     interactGuard(near);
   }
@@ -1480,7 +1487,8 @@ app.on('update',dt=>{
     forward.z*(keys.up-keys.down)+right.z*(keys.right-keys.left)
   );
   const p=player.getLocalPosition();
-  const curTop=groundTop(p.x,p.z)??BASE;
+  const inMine=p.y<MINE_Y+2;
+  const curTop=inMine?MINE_Y:(groundTop(p.x,p.z)??BASE);
   const groundY=curTop+0.5;
   if(p.y>groundY+0.02){
     vy-=18*dt;
@@ -1502,12 +1510,22 @@ app.on('update',dt=>{
     const speed=4;
     const nx=p.x+move.x*speed*dt;
     const nz=p.z+move.z*speed*dt;
-    if(!isBlocked(nx,nz,curTop)){
-      player.setLocalPosition(nx,onGround?groundTop(nx,nz)+0.5:p.y,nz);
-    }else if(!isBlocked(nx,p.z,curTop)){
-      player.setLocalPosition(nx,onGround?groundTop(nx,p.z)+0.5:p.y,p.z);
-    }else if(!isBlocked(p.x,nz,curTop)){
-      player.setLocalPosition(p.x,onGround?groundTop(p.x,nz)+0.5:p.y,nz);
+    if(inMine){
+      const l=LOCS.find(l=>Math.abs(p.x-l.minePos.x)<3&&Math.abs(p.z-l.minePos.z)<3);
+      if(l){
+        const dx=nx-l.minePos.x,dz=nz-l.minePos.z;
+        if(Math.abs(dx)<=2&&Math.abs(dz)<=2){
+          player.setLocalPosition(nx,MINE_Y+0.5,nz);
+        }
+      }
+    }else{
+      if(!isBlocked(nx,nz,curTop)){
+        player.setLocalPosition(nx,onGround?groundTop(nx,nz)+0.5:p.y,nz);
+      }else if(!isBlocked(nx,p.z,curTop)){
+        player.setLocalPosition(nx,onGround?groundTop(nx,p.z)+0.5:p.y,p.z);
+      }else if(!isBlocked(p.x,nz,curTop)){
+        player.setLocalPosition(p.x,onGround?groundTop(p.x,nz)+0.5:p.y,nz);
+      }
     }
   }
   const p2=player.getLocalPosition();
@@ -1541,6 +1559,7 @@ app.on('update',dt=>{
     if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
     else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
     else if(near.userData.game)prompt.textContent='E / клик — мини-игра: '+near.userData.gameDef.title;
+    else if(near.userData.mine)prompt.textContent='E / клик — '+(near.userData.underground?'подняться':'спуститься в шахту');
     else prompt.textContent='E / клик — поговорить со стражником';
   }else{
     prompt.classList.remove('show');
