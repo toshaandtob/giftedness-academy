@@ -251,7 +251,6 @@ const darkStone=mat([0.35,0.35,0.38]);
 const dirtMat=mat([0.55,0.4,0.25]);
 const woodMat=mat([0.55,0.4,0.25]);
 const grassMat=mat([0.45,0.65,0.3]);
-const lightGreen=mat([0.55,0.8,0.4]);
 const leafMat=mat([0.3,0.55,0.25]);
 const trunkMat=mat([0.4,0.3,0.2]);
 const cloudMat=mat([0.95,0.95,0.95]);
@@ -352,8 +351,7 @@ function locTop(x,z){
     const r=locRadius(l.id);
     const dx=x-l.cx,dz=z-l.cz;
     if(dx*dx+dz*dz<=r*r){
-      const hill=Math.max(0,Math.round(Math.sin(x*0.4)+Math.cos(z*0.4)));
-      return BASE+hill;
+      return BASE;
     }
   }
   return null;
@@ -414,6 +412,7 @@ LOCS.forEach((l,i)=>{
   }
 });
 
+// Ровная зеленая земля без цветных пятен и без холмов
 for(let x=-50;x<50;x++){
   for(let z=-50;z<50;z++){
     const l=locAt(x,z);
@@ -421,17 +420,9 @@ for(let x=-50;x<50;x++){
     const top=locTop(x,z);
     for(let y=BASE-5;y<=top;y++){
       const isTop=(y===top);
-      let m;
-      if(isTop){
-        const rnd=Math.random();
-        if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
-        else if(rnd<0.15)m=lightGreen;
-        else m=grassMat;
-      }else{
-        m=dirtMat;
-      }
+      const m=isTop?grassMat:dirtMat;
       cube(x,y,z,m);
-      if(isTop&&m===grassMat){
+      if(isTop){
         if(Math.random()<0.85){
           for(let k=0;k<2;k++){
             const t=new pc.Entity();
@@ -634,7 +625,6 @@ LOCS.forEach((l,i)=>{
   gameStations.push(g);
 });
 
-// 3D доски для шахмат и морского боя
 const chessCells=[];
 const seaCells=[];
 const chessLoc=LOCS.findIndex(l=>l.id==='creative');
@@ -885,7 +875,6 @@ player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,start
 world.addChild(player);
 
 let yaw=0,pitch=0;
-// Камера от 1 лица
 function updateCamera(){
   const p=player.getLocalPosition();
   camera.setLocalPosition(p.x,p.y+1.4,p.z);
@@ -1010,16 +999,13 @@ function mineAt(cx,cy){
     return;
   }
   if(best.userData.chessCell){
-    // Шахматы 3D: поставить/убрать ферзя
     const cell=best;
     if(cell.userData.queen){
       cell.userData.queen=false;
-      // Убрать ферзя (золотой блок сверху)
       const q=cell.children.find(c=>c.userData&&c.userData.isQueen);
       if(q)cell.removeChild(q);
       toast('Ферзь убран.');
     }else{
-      // Посчитать ферзей
       const count=chessCells.filter(c=>c.userData.queen).length;
       if(count>=4){toast('Уже 4 ферзя. Уберите один.');return;}
       cell.userData.queen=true;
@@ -1030,7 +1016,6 @@ function mineAt(cx,cy){
       q.userData={isQueen:true};
       cell.addChild(q);
       toast('Ферзь поставлен. '+(count+1)+'/4');
-      // Проверка конфликта
       const queens=chessCells.filter(c=>c.userData.queen);
       let conflict=false;
       for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
@@ -1045,7 +1030,6 @@ function mineAt(cx,cy){
     return;
   }
   if(best.userData.seaCell){
-    // Морской бой 3D: выстрел
     const cell=best;
     if(cell.userData.revealed){toast('Уже стреляли сюда.');return;}
     cell.userData.revealed=true;
