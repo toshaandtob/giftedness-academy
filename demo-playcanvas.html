@@ -143,8 +143,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук, поговорить со стражником или прочитать обелиск. <b>E</b> — действие.</p>
-    <p>У каждого стражника — 3 задания: 1) прочитай обелиск в центре острова (знания раздела); 2) найди и прочитай письмо-подсказку; 3) ответь на вопрос. Руда нужна только для еды и очков — стражнику она не нужна.</p>
+    <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук, поговорить со стражником, прочитать обелиск, сорвать яблоко или спуститься в шахту.</p>
+    <p>Руда добывается только в шахте — найдите темный вход с лестницей и спуститесь вниз. На деревьях растут яблоки — кликните, чтобы сорвать.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -183,8 +183,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Курс пройден!</h2>
     <p>Вы прошли все локации, изучили знания через обелиски и письма и выполнили испытания.</p>
-    <p><b>Заключение:</b> диагностика одаренности — это не единичный акт измерения, а процесс, встроенный в образовательную практику. Тесты дополняются наблюдением, анализом продуктов деятельности и экспертными оценками. Главный «диагност» — учитель, создающий среду, в которой способности могут проявиться.</p>
-    <p><b>Литература:</b> Рабочая концепция одаренности (Богоявленская, 2003); Ратнер, Губайдуллина (2014); Савенков (2018); Шумакова (2004); Шумакова и др. (1991); Дружинин (2007, 2026).</p>
+    <p><b>Заключение:</b> диагностика одаренности — это не единичный акт измерения, а процесс, встроенный в образовательную практику.</p>
     <button id="closeFinal">Продолжить</button>
   </div>
 </div>
@@ -246,6 +245,8 @@ const greenMat=mat([0.3,0.7,0.4],[0.1,0.35,0.15]);
 const redMat=mat([0.8,0.2,0.2],[0.4,0.05,0.05]);
 const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
+const appleMat=mat([0.85,0.15,0.15],[0.4,0.05,0.05]);
+const flowerMats=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95]),mat([0.6,0.4,0.8])];
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
@@ -312,6 +313,7 @@ LOCS.forEach((l,i)=>{
 });
 function locRadius(id){return id==='city'?10:(id==='dungeon1'||id==='dungeon2')?7:9;}
 const BASE=8;
+const MINE_Y=BASE-7;
 function locTop(x,z){
   for(const l of LOCS){
     const r=locRadius(l.id);
@@ -359,17 +361,7 @@ function cube(x,y,z,m){
   world.addChild(b);
 }
 
-const pathCells=new Set();
-function addPath(x1,z1,x2,z2){
-  const dx=x2-x1,dz=z2-z1;
-  const steps=Math.max(Math.abs(dx),Math.abs(dz),1);
-  for(let i=0;i<=steps;i++){
-    const t=i/steps;
-    const x=Math.round(x1+dx*t);
-    const z=Math.round(z1+dz*t);
-    pathCells.add(x+','+z);
-  }
-}
+// Ключевые точки (без тропинок)
 LOCS.forEach((l,i)=>{
   const r=locRadius(l.id);
   const a=Math.random()*Math.PI*2;
@@ -380,31 +372,38 @@ LOCS.forEach((l,i)=>{
   const len=Math.sqrt(dx*dx+dz*dz);
   const ux=dx/len,uz=dz/len;
   l.guardPos={x:Math.round(l.cx+ux*(r-3)),z:Math.round(l.cz+uz*(r-3))};
-  addPath(l.cx,l.cz,l.chestPos.x,l.chestPos.z);
-  addPath(l.cx,l.cz,l.guardPos.x,l.guardPos.z);
+  // Шахта: вход на острове
+  l.minePos={x:l.cx+3,z:l.cz+3};
+  // Места для руды — только под землей (в шахте)
   l.oreSpots=[];
   for(let k=0;k<4;k++){
     const oa=k*Math.PI/2+Math.random()*0.5;
-    const orr=3+Math.random()*(r-4);
-    l.oreSpots.push({x:Math.round(l.cx+Math.cos(oa)*orr),z:Math.round(l.cz+Math.sin(oa)*orr)});
+    const orr=1+Math.random()*1.5;
+    l.oreSpots.push({x:Math.round(l.minePos.x+Math.cos(oa)*orr),z:Math.round(l.minePos.z+Math.sin(oa)*orr)});
   }
 });
 
+// Строим локации: яркие, без тропинок, с цветами
 for(let x=-45;x<45;x++){
   for(let z=-45;z<45;z++){
     const l=locAt(x,z);
     if(!l)continue;
     const top=locTop(x,z);
-    const key=x+','+z;
-    const onPath=pathCells.has(key);
-    const onOreSpot=l.oreSpots.some(s=>s.x===x&&s.z===z);
     for(let y=BASE-5;y<=top;y++){
       const isTop=(y===top);
       let m;
       if(l.id==='dungeon1'||l.id==='dungeon2'){
-        m=isTop?(onPath?stoneMat:darkStone):darkStone;
+        m=isTop?darkStone:darkStone;
       }else{
-        m=isTop?(onPath?stoneMat:(onOreSpot?dirtMat:(Math.random()<0.4?grassMat:stoneMat))):dirtMat;
+        // Яркая земля: трава + цветные пятна
+        if(isTop){
+          const rnd=Math.random();
+          if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
+          else if(rnd<0.15)m=goldMat;
+          else m=grassMat;
+        }else{
+          m=dirtMat;
+        }
       }
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
@@ -417,9 +416,9 @@ for(let x=-45;x<45;x++){
             world.addChild(t);
           }
         }
-        if(Math.random()<0.08){
+        if(Math.random()<0.12){
           const f=new pc.Entity();
-          const fm=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95])][Math.floor(Math.random()*3)];
+          const fm=flowerMats[Math.floor(Math.random()*flowerMats.length)];
           f.addComponent('render',{type:'box',material:fm});
           f.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.65,z+(Math.random()-0.5)*0.6);
           f.setLocalScale(0.18,0.18,0.18);
@@ -475,19 +474,23 @@ bridges.forEach(b=>{
   }
 });
 
-const pathArr=Array.from(pathCells);
-pathArr.forEach((key,idx)=>{
-  if(idx%4!==0)return;
-  const parts=key.split(',');
-  const x=parseInt(parts[0],10),z=parseInt(parts[1],10);
-  const top=groundTop(x,z);
-  if(top==null)return;
-  const g=new pc.Entity('pathtorch');
-  const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
-  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.0,range:8});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
-  g.setLocalPosition(x,top+0.5,z);
-  world.addChild(g);
+// Факелы — случайно по островам (не по тропинкам)
+LOCS.forEach(l=>{
+  const r=locRadius(l.id);
+  for(let i=0;i<3;i++){
+    const a=Math.random()*Math.PI*2;
+    const rr=3+Math.random()*(r-3);
+    const x=Math.round(l.cx+Math.cos(a)*rr);
+    const z=Math.round(l.cz+Math.sin(a)*rr);
+    const top=groundTop(x,z);
+    if(top==null)continue;
+    const g=new pc.Entity('pathtorch');
+    const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
+    const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
+    const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.0,range:8});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
+    g.setLocalPosition(x,top+0.5,z);
+    world.addChild(g);
+  }
 });
 
 function house(x,z){
@@ -544,6 +547,8 @@ LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
   }
 });
 
+// Деревья с яблоками
+const apples=[];
 function voxelTree(x,z,leafM){
   const top=groundTop(x,z);
   if(top==null)return;
@@ -554,6 +559,19 @@ function voxelTree(x,z,leafM){
       cube(x+dx,top+dy,z+dz,leafM);
     }
   }
+  // Яблоки на кроне
+  for(let i=0;i<2;i++){
+    const ax=x+(Math.random()-0.5)*1.6;
+    const az=z+(Math.random()-0.5)*1.6;
+    const ay=top+3.5+Math.random()*0.8;
+    const ap=new pc.Entity('apple_'+apples.length);
+    ap.addComponent('render',{type:'box',material:appleMat});
+    ap.setLocalPosition(ax,ay,az);
+    ap.setLocalScale(0.3,0.3,0.3);
+    ap.userData={apple:true,alive:true};
+    world.addChild(ap);
+    apples.push(ap);
+  }
 }
 LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
   for(let i=0;i<6;i++){
@@ -561,18 +579,65 @@ LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const r=3+Math.random()*(locRadius(l.id)-4);
     const x=Math.round(l.cx+Math.cos(a)*r);
     const z=Math.round(l.cz+Math.sin(a)*r);
-    // Не спавнить деревья рядом с обелиском (центр), стражником, письмом, сундуком и рудой
     const nearCenter=Math.abs(x-l.cx)<3&&Math.abs(z-l.cz)<3;
     const nearGuard=Math.hypot(x-l.guardPos.x,z-l.guardPos.z)<3;
     const nearLetter=Math.hypot(x-(l.cx+2),z-l.cz)<2;
     const nearChest=Math.hypot(x-l.chestPos.x,z-l.chestPos.z)<2;
-    const nearOre=l.oreSpots.some(s=>Math.hypot(x-s.x,z-s.z)<2);
-    if(nearCenter||nearGuard||nearLetter||nearChest||nearOre)continue;
-    if(pathCells.has(x+','+z))continue;
+    const nearMine=Math.hypot(x-l.minePos.x,z-l.minePos.z)<3;
+    if(nearCenter||nearGuard||nearLetter||nearChest||nearMine)continue;
     voxelTree(x,z,leafMat);
   }
 });
 
+// Шахты: вход + подземная комната с рудой
+const mineEntrances=[];
+LOCS.forEach((l,i)=>{
+  const mp=l.minePos;
+  const top=groundTop(mp.x,mp.z);
+  if(top==null)return;
+  // Вход: темная яма 2x2 с лестницей
+  for(let dx=0;dx<2;dx++)for(let dz=0;dz<2;dz++){
+    cube(mp.x+dx,top,mp.z+dz,darkStone);
+  }
+  // Лестница (вертикальная)
+  const ladder=new pc.Entity('ladder_'+i);
+  for(let dy=0;dy<6;dy++){
+    const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder.addChild(step);
+  }
+  ladder.setLocalPosition(mp.x+0.5,top+0.5,mp.z+0.5);
+  ladder.userData={mine:true,loc:i,alive:true};
+  world.addChild(ladder);
+  mineEntrances.push(ladder);
+  // Подземная комната: пол 5x5 на MINE_Y
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    cube(mp.x+dx,MINE_Y,mp.z+dz,darkStone);
+  }
+  // Стены комнаты
+  for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
+    if(Math.abs(dx)===2||Math.abs(dz)===2){
+      cube(mp.x+dx,MINE_Y+1,mp.z+dz,darkStone);
+      cube(mp.x+dx,MINE_Y+2,mp.z+dz,darkStone);
+    }
+  }
+  // Лестница внизу (для возврата)
+  const ladder2=new pc.Entity('ladder2_'+i);
+  for(let dy=0;dy<6;dy++){
+    const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder2.addChild(step);
+  }
+  ladder2.setLocalPosition(mp.x+0.5,MINE_Y+0.5,mp.z+0.5);
+  ladder2.userData={mine:true,loc:i,alive:true,underground:true};
+  world.addChild(ladder2);
+  mineEntrances.push(ladder2);
+  // Факел в шахте
+  const torch=new pc.Entity('minetorch_'+i);
+  const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);torch.addChild(post);
+  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);torch.addChild(lamp);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);torch.addChild(pl);
+  torch.setLocalPosition(mp.x-1,MINE_Y+0.5,mp.z-1);
+  world.addChild(torch);
+});
+
+// Кусты, лампы, ящики, камни
 LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
   const r=locRadius(l.id);
   for(let i=0;i<5;i++){
@@ -582,7 +647,6 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
     if(top==null)continue;
-    if(pathCells.has(x+','+z))continue;
     const b=new pc.Entity('bush');
     b.addComponent('render',{type:'box',material:leafMat});
     b.setLocalPosition(x,top+0.3,z);
@@ -596,7 +660,6 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
     if(top==null)continue;
-    if(pathCells.has(x+','+z))continue;
     const g=new pc.Entity('lamp');
     const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);g.addChild(post);
     const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
@@ -611,7 +674,6 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
     if(top==null)continue;
-    if(pathCells.has(x+','+z))continue;
     const c=new pc.Entity('crate');
     c.addComponent('render',{type:'box',material:woodMat});
     c.setLocalPosition(x,top+0.3,z);
@@ -625,7 +687,6 @@ LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const z=Math.round(l.cz+Math.sin(a)*rr);
     const top=groundTop(x,z);
     if(top==null)continue;
-    if(pathCells.has(x+','+z))continue;
     const rock=new pc.Entity('rock');
     rock.addComponent('render',{type:'box',material:stoneMat});
     rock.setLocalPosition(x,top+0.35,z);
@@ -755,6 +816,7 @@ const inventory={gold:0,blue:0,purple:0,green:0,red:0};
 const collectedLetters=[];
 let selectedLetter=null;
 
+// Руда — только в шахте (под землей)
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
   const e=new pc.Entity('ore_'+typeKey+'_'+Math.random().toString(36).slice(2));
@@ -767,8 +829,7 @@ function spawnOre(typeKey){
   }
   const l=LOCS[Math.floor(Math.random()*LOCS.length)];
   const spot=l.oreSpots[Math.floor(Math.random()*l.oreSpots.length)];
-  const top=groundTop(spot.x,spot.z)??BASE;
-  e.setLocalPosition(spot.x,top+0.5,spot.z);
+  e.setLocalPosition(spot.x,MINE_Y+0.5,spot.z);
   e.userData={type:typeKey,alive:true};
   world.addChild(e);ores.push(e);
   return e;
@@ -961,7 +1022,9 @@ function mineAt(cx,cy){
   chests.forEach(check);
   guards.forEach(check);
   beacons.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников и обелиски.');return;}
+  mineEntrances.forEach(check);
+  apples.forEach(check);
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников, обелиски, яблоки и шахты.');return;}
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -991,6 +1054,30 @@ function mineAt(cx,cy){
         toast('Стражник: теперь найди письмо-подсказку.');
       }
     });
+    updateHUD();
+    return;
+  }
+  if(best.userData.mine){
+    // Телепорт в шахту / наверх
+    const l=LOCS[best.userData.loc];
+    const p=player.getLocalPosition();
+    if(best.userData.underground){
+      // Наверх
+      player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
+      toast('Вы поднялись на поверхность.');
+    }else{
+      // Вниз в шахту
+      player.setLocalPosition(l.minePos.x,MINE_Y+0.5,l.minePos.z);
+      toast('Вы спустились в шахту. Здесь добывается руда.');
+    }
+    updateCamera();
+    return;
+  }
+  if(best.userData.apple){
+    best.userData.alive=false;
+    world.removeChild(best);
+    food++;foodTotal++;
+    toast('Яблоко сорвано! +1 еда.');
     updateHUD();
     return;
   }
@@ -1115,6 +1202,7 @@ function findNear(){
   chests.forEach(o=>check(o,3));
   guards.forEach(o=>check(o,3));
   beacons.forEach(o=>check(o,5));
+  mineEntrances.forEach(o=>check(o,3));
   return best;
 }
 function interact(){
@@ -1132,6 +1220,18 @@ function interact(){
         toast('Стражник: теперь найди письмо-подсказку.');
       }
     });
+  }else if(near.userData.mine){
+    // Телепорт в шахту / наверх
+    const l=LOCS[near.userData.loc];
+    const p=player.getLocalPosition();
+    if(near.userData.underground){
+      player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
+      toast('Вы поднялись на поверхность.');
+    }else{
+      player.setLocalPosition(l.minePos.x,MINE_Y+0.5,l.minePos.z);
+      toast('Вы спустились в шахту. Здесь добывается руда.');
+    }
+    updateCamera();
   }else if(near.userData.npc){
     interactGuard(near);
   }
@@ -1224,7 +1324,7 @@ document.getElementById('questToggle').addEventListener('click',()=>{
 document.getElementById('foodSlot').addEventListener('click',()=>{
   if(gameOver)return;
   if(food>0&&hearts<maxHearts){food--;hearts++;toast('Вы отхилились на 1 сердце.');}
-  else if(food<=0){toast('Нет еды. Добывайте нужные блоки или открывайте сундуки.');}
+  else if(food<=0){toast('Нет еды. Срывайте яблоки или открывайте сундуки.');}
   else{toast('Сердца уже полные.');}
   updateHUD();
 });
@@ -1238,6 +1338,7 @@ document.getElementById('restart').addEventListener('click',()=>{
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
   letterBlocks.forEach(l=>{if(!l.userData.alive){l.userData.alive=true;world.addChild(l);}});
+  apples.forEach(a=>{if(!a.userData.alive){a.userData.alive=true;world.addChild(a);}});
   chests.forEach(c=>{c.userData.opened=false;c.userData.lid.setLocalPosition(0,0.55,0);c.userData.lid.setLocalEulerAngles(0,0,0);});
   bridges.forEach(b=>{
     if(b.req){
@@ -1273,22 +1374,35 @@ app.on('update',dt=>{
     forward.z*(keys.up-keys.down)+right.z*(keys.right-keys.left)
   );
   const p=player.getLocalPosition();
-  const curTop=groundTop(p.x,p.z)??BASE;
+  // Если игрок в шахте — пол на MINE_Y
+  const inMine=p.y<MINE_Y+2;
+  const curTop=inMine?MINE_Y:(groundTop(p.x,p.z)??BASE);
   if(move.length()>0){
     move.normalize();
     const speed=4;
     const nx=p.x+move.x*speed*dt;
     const nz=p.z+move.z*speed*dt;
-    if(!isBlocked(nx,nz,curTop)){
-      player.setLocalPosition(nx,groundTop(nx,nz)+0.5,nz);
-    }else if(!isBlocked(nx,p.z,curTop)){
-      player.setLocalPosition(nx,groundTop(nx,p.z)+0.5,p.z);
-    }else if(!isBlocked(p.x,nz,curTop)){
-      player.setLocalPosition(p.x,groundTop(p.x,nz)+0.5,nz);
+    if(inMine){
+      // В шахте — ограничение комнатой 5x5
+      const l=LOCS.find(l=>Math.abs(p.x-l.minePos.x)<3&&Math.abs(p.z-l.minePos.z)<3);
+      if(l){
+        const dx=nx-l.minePos.x,dz=nz-l.minePos.z;
+        if(Math.abs(dx)<=2&&Math.abs(dz)<=2){
+          player.setLocalPosition(nx,MINE_Y+0.5,nz);
+        }
+      }
+    }else{
+      if(!isBlocked(nx,nz,curTop)){
+        player.setLocalPosition(nx,groundTop(nx,nz)+0.5,nz);
+      }else if(!isBlocked(nx,p.z,curTop)){
+        player.setLocalPosition(nx,groundTop(nx,p.z)+0.5,p.z);
+      }else if(!isBlocked(p.x,nz,curTop)){
+        player.setLocalPosition(p.x,groundTop(p.x,nz)+0.5,nz);
+      }
     }
   }
   const p2=player.getLocalPosition();
-  const targetY=(groundTop(p2.x,p2.z)??BASE)+0.5;
+  const targetY=inMine?MINE_Y+0.5:(groundTop(p2.x,p2.z)??BASE)+0.5;
   player.setLocalPosition(p2.x,p2.y+(targetY-p2.y)*0.2,p2.z);
   player.setLocalEulerAngles(0,yaw*180/Math.PI+180,0);
   updateCamera();
@@ -1318,6 +1432,7 @@ app.on('update',dt=>{
     actionBtn.classList.add('show');
     if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
     else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
+    else if(near.userData.mine)prompt.textContent='E / клик — '+(near.userData.underground?'подняться':'спуститься в шахту');
     else prompt.textContent='E / клик — поговорить со стражником';
   }else{
     prompt.classList.remove('show');
