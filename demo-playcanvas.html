@@ -561,7 +561,13 @@ LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
     const r=3+Math.random()*(locRadius(l.id)-4);
     const x=Math.round(l.cx+Math.cos(a)*r);
     const z=Math.round(l.cz+Math.sin(a)*r);
-    if(Math.abs(x-l.cx)<3&&Math.abs(z-l.cz)<3)continue;
+    // Не спавнить деревья рядом с обелиском (центр), стражником, письмом, сундуком и рудой
+    const nearCenter=Math.abs(x-l.cx)<3&&Math.abs(z-l.cz)<3;
+    const nearGuard=Math.hypot(x-l.guardPos.x,z-l.guardPos.z)<3;
+    const nearLetter=Math.hypot(x-(l.cx+2),z-l.cz)<2;
+    const nearChest=Math.hypot(x-l.chestPos.x,z-l.chestPos.z)<2;
+    const nearOre=l.oreSpots.some(s=>Math.hypot(x-s.x,z-s.z)<2);
+    if(nearCenter||nearGuard||nearLetter||nearChest||nearOre)continue;
     if(pathCells.has(x+','+z))continue;
     voxelTree(x,z,leafMat);
   }
