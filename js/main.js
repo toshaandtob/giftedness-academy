@@ -42,7 +42,8 @@ window.addEventListener('scroll',updateProgress,{passive:true});
 window.addEventListener('resize',updateProgress);
 updateProgress();
 
-/* ---------- Хранилище прогресса ---------- */nconst store={
+/* ---------- Хранилище прогресса ---------- */
+const store={
  get(k){try{return JSON.parse(localStorage.getItem('ga_'+k)||'null')}catch(e){return null}},
  set(k,v){try{localStorage.setItem('ga_'+k,JSON.stringify(v))}catch(e){}}
 };
