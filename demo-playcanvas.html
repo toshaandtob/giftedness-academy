@@ -160,9 +160,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица. <b>ЛКМ</b> — добыть/взаимодействовать. <b>ПКМ</b> — поставить блок. <b>Пробел / ⤒</b> — прыжок.</p>
+    <p><b>День и ночь:</b> солнце сменяется луной, небо темнеет, облака плывут. Полный цикл — 2 минуты.</p>
     <p><b>Паркур:</b> между островами — отдельные блоки с промежутками. Прыгайте с блока на блок!</p>
-    <p><b>Шахматы 3D:</b> кликните по ферзю — возьмите его, кликните по пустой клетке — поставьте. Расставьте 4 ферзя без конфликтов.</p>
-    <p><b>Деревья:</b> теперь с хитбоксами — сквозь стволы не пройти.</p>
+    <p><b>Шахматы 3D:</b> кликните по ферзю — возьмите его, кликните по пустой клетке — поставьте.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -289,6 +289,26 @@ sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])}
 sun.setLocalPosition(90,55,-90);
 sun.setLocalScale(10,10,10);
 world.addChild(sun);
+
+const moon=new pc.Entity('moon');
+moon.addComponent('render',{type:'sphere',material:mat([0.9,0.9,0.95],[0.3,0.3,0.35])});
+moon.setLocalScale(7,7,7);
+world.addChild(moon);
+
+const clouds=[];
+for(let i=0;i<8;i++){
+  const g=new pc.Entity('cloud_'+i);
+  for(let k=0;k<3;k++){
+    const b=new pc.Entity();
+    b.addComponent('render',{type:'box',material:cloudMat});
+    b.setLocalPosition((k-1)*3+Math.random(),Math.random()*0.5,(Math.random()-0.5)*2);
+    b.setLocalScale(4+Math.random()*3,1.5,2.5+Math.random()*2);
+    g.addChild(b);
+  }
+  g.setLocalPosition((Math.random()-0.5)*200,35+Math.random()*15,(Math.random()-0.5)*200);
+  world.addChild(g);
+  clouds.push(g);
+}
 
 const LOCS=[
  {id:'intro',name:'Остров Начал',
@@ -1515,8 +1535,26 @@ document.getElementById('startGame').addEventListener('click',()=>{
 });
 
 let t=0;
+let dayTime=0;
+const DAY_LEN=120;
 app.on('update',dt=>{
   t+=dt;
+  dayTime=(dayTime+dt/DAY_LEN)%1;
+  const sunA=dayTime*Math.PI*2;
+  sun.setLocalPosition(Math.cos(sunA)*120,Math.sin(sunA)*80+20,-60);
+  moon.setLocalPosition(-Math.cos(sunA)*120,-Math.sin(sunA)*80+20,-60);
+  const dayF=Math.max(0,Math.sin(sunA));
+  const sky=new pc.Color(0.12+0.38*dayF,0.18+0.52*dayF,0.28+0.72*dayF);
+  scene.fogColor=sky;
+  camera.camera.clearColor=sky;
+  scene.ambientLight=new pc.Color(0.12+0.38*dayF,0.12+0.38*dayF,0.18+0.37*dayF);
+  light.light.intensity=0.25+1.05*dayF;
+  clouds.forEach(c=>{
+    const p=c.getLocalPosition();
+    p.x+=dt*1.5;
+    if(p.x>120)p.x=-120;
+    c.setLocalPosition(p.x,p.y,p.z);
+  });
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
   const right=new pc.Vec3(-forward.z,0,forward.x);
   const move=new pc.Vec3(
