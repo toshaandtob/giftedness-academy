@@ -195,6 +195,8 @@ const greenMat=mat([0.3,0.7,0.4],[0.1,0.35,0.15]);
 const redMat=mat([0.8,0.2,0.2],[0.4,0.05,0.05]);
 const letterMat=mat([0.9,0.85,0.7],[0.5,0.45,0.3]);
 const lampMat=mat([1,0.85,0.5],[1,0.8,0.4]);
+const copperMat=mat([0.8,0.65,0.3],[0.3,0.2,0.05]);
+const rustMat=mat([0.55,0.4,0.25]);
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
@@ -273,7 +275,6 @@ for(let i=0;i<chain.length-1;i++){
   const b=LOCS.find(l=>l.id===chain[i+1]);
   bridges.push({x1:a.cx,z1:a.cz,x2:b.cx,z2:b.cz,req:'t'+(i+1)});
 }
-// Шорткаты (после t8)
 const shortcuts=[
  {x1:-14,z1:-14,x2:-14,z2:14,req:'t8'},
  {x1:0,z1:0,x2:-14,z2:-14,req:'t8'},
@@ -343,7 +344,7 @@ for(let x=-32;x<32;x++){
     const dx=x-l.cx,dz=z-l.cz;
     const dist=Math.sqrt(dx*dx+dz*dz);
     if(dist>r-1.5&&Math.random()<0.15){
-      cube(x,top+1,z,Math.random()<0.5?goldMat:rustMat||dirtMat);
+      cube(x,top+1,z,Math.random()<0.5?goldMat:rustMat);
     }
   }
 }
@@ -368,7 +369,7 @@ bridges.forEach(b=>{
     const z=Math.round(b.z1+dz*t);
     cube(x,BASE,z,stoneMat);
     if(i%4===0){
-      cube(x,BASE+1,z,woodMat);
+      cube(x,BASE+1,z,copperMat);
     }
   }
   if(b.req){
@@ -400,7 +401,7 @@ function house(x,z){
 }
 house(-4,-4);house(4,-4);house(0,5);
 
-// Подземелья: стены и факелы
+// Подземелья
 LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
   const r=5;
   for(let x=l.cx-r;x<=l.cx+r;x++){
