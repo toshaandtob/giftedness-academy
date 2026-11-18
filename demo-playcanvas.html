@@ -5,52 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Демо: Академия знаний — Minecraft-стиль на PlayCanvas</title>
 <style>
-:root{--gold:#d9a441;--green:#6f9a5d;--blue:#8fc4d6;--ink:#3b2d20}
+:root{--gold:#d9a441;--green:#6f9a5d;--blue:#8fc4d6;--ink:#3b2d20;--danger:#b3573f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;font-family:'Cormorant Garamond',Georgia,serif;color:var(--ink);background:#0e1420}
 #app{position:fixed;inset:0}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .hud{position:fixed;inset:0;pointer-events:none;z-index:10}
 .crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.8);border-radius:50%;box-shadow:0 0 10px rgba(255,255,255,.4)}
-.hotbar{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px)}
-.slot{width:56px;height:56px;border:2px solid rgba(255,255,255,.35);border-radius:8px;display:grid;place-items:center;position:relative;background:rgba(0,0,0,.35)}
-.slot .icon{width:34px;height:34px;border-radius:6px}
+.hearts{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);display:flex;gap:4px;font-size:22px;text-shadow:0 2px 4px #000}
+.heart{color:#ff5a5a}
+.heart.empty{color:rgba(255,255,255,.25)}
+.hotbar{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px);pointer-events:auto}
+.slot{width:56px;height:56px;border:2px solid rgba(255,255,255,.35);border-radius:8px;display:grid;place-items:center;position:relative;background:rgba(0,0,0,.35);cursor:pointer}
+.slot .icon{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;font-size:20px}
 .slot .count{position:absolute;right:4px;bottom:2px;font:700 14px/1 'Marcellus',serif;color:#fff;text-shadow:0 1px 2px #000}
 .slot.active{border-color:var(--gold);box-shadow:0 0 12px rgba(217,164,65,.7)}
-.icon.gold{background:linear-gradient(135deg,#ffe08a,#d9a441)}
-.icon.blue{background:linear-gradient(135deg,#bfe6ff,#4fa3a5)}
-.icon.purple{background:linear-gradient(135deg,#e6d4ff,#8e6bd6)}
+.icon.pickaxe{background:linear-gradient(135deg,#cfd8dc,#78909c)}
+.icon.food{background:linear-gradient(135deg,#ffcc80,#e65100)}
 .topbar{position:absolute;left:12px;top:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;pointer-events:none}
 .panel{background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;padding:.6rem .9rem;color:#fff;backdrop-filter:blur(4px);max-width:340px}
 .panel h1{font:700 1.05rem/1.3 'Marcellus',serif;margin:0 0 .3rem;color:#ffe9a8}
 .panel p{margin:.2rem 0;font-size:.95rem;line-height:1.35}
-.total{font:700 1.1rem/1 'Marcellus',serif;color:#ffe9a8}
+.quest{display:flex;align-items:center;gap:.5rem;margin-top:.3rem}
+.quest .dot{width:16px;height:16px;border-radius:4px;box-shadow:0 0 8px currentColor}
+.dot.gold{background:#d9a441;color:#d9a441}
+.dot.blue{background:#4fa3a5;color:#4fa3a5}
+.dot.purple{background:#8e6bd6;color:#8e6bd6}
+.dot.green{background:#6f9a5d;color:#6f9a5d}
+.dot.red{background:#b3573f;color:#b3573f}
+.score{font:700 1.1rem/1 'Marcellus',serif;color:#ffe9a8}
 .back{position:absolute;right:12px;top:12px;pointer-events:auto}
 .back a{display:inline-block;padding:.5rem .9rem;border-radius:999px;text-decoration:none;color:#3f2c16;background:linear-gradient(135deg,#f7dd93,#d9a441);border:2px solid rgba(107,74,47,.4);font-family:'Marcellus',serif;font-weight:700}
 .toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:rgba(20,20,20,.7);color:#fff;padding:.5rem .9rem;border-radius:10px;border:1px solid rgba(255,255,255,.3);opacity:0;transition:opacity .3s;font-family:'Marcellus',serif}
 .toast.show{opacity:1}
-@media(max-width:520px){.slot{width:48px;height:48px}.slot .icon{width:28px;height:28px}.panel{max-width:260px;font-size:.9rem}}
+.flash{position:fixed;inset:0;background:rgba(179,87,63,.35);opacity:0;pointer-events:none;transition:opacity .25s;z-index:9}
+.flash.show{opacity:1}
+.gameover{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.75);z-index:20}
+.gameover.show{display:grid}
+.gameover .box{background:rgba(20,20,20,.85);border:2px solid rgba(255,255,255,.3);border-radius:16px;padding:1.5rem 2rem;text-align:center;color:#fff}
+.gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
+.gameover p{margin:.3rem 0}
+.gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
+@media(max-width:520px){.slot{width:48px;height:48px}.slot .icon{width:28px;height:28px;font-size:16px}.panel{max-width:260px;font-size:.9rem}.hearts{bottom:84px;font-size:18px}}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div class="flash" id="flash"></div>
 <div class="hud">
   <div class="topbar">
     <div class="panel">
-      <h1>Академия знаний — демо добычи</h1>
-      <p>Коснитесь или кликните по светящемуся блоку, чтобы добыть ресурс.</p>
-      <p>Перетаскивайте палец/мышь, чтобы осмотреться.</p>
-      <p>Собрано всего: <span class="total" id="total">0</span></p>
+      <h1>Академия знаний — добыча ресурсов</h1>
+      <p>Добывайте блок нужного типа. За правильный блок — еда. За неправильный — теряете сердце.</p>
+      <div class="quest"><span class="dot" id="questDot"></span><span id="questText">Добудь: золото</span></div>
+      <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span></p>
     </div>
     <div class="back"><a href="index.html">← На карту</a></div>
   </div>
   <div class="crosshair"></div>
-  <div class="hotbar" id="hotbar">
-    <div class="slot active" data-type="gold"><div class="icon gold"></div><span class="count" id="c-gold">0</span></div>
-    <div class="slot" data-type="blue"><div class="icon blue"></div><span class="count" id="c-blue">0</span></div>
-    <div class="slot" data-type="purple"><div class="icon purple"></div><span class="count" id="c-purple">0</span></div>
+  <div class="hearts" id="hearts"></div>
+  <div class="hotbar">
+    <div class="slot active" data-slot="pickaxe"><div class="icon pickaxe">⛏️</div><span class="count">1</span></div>
+    <div class="slot" data-slot="food" id="foodSlot"><div class="icon food">🍎</div><span class="count" id="foodSlotCount">0</span></div>
   </div>
   <div class="toast" id="toast"></div>
+</div>
+<div class="gameover" id="gameover">
+  <div class="box">
+    <h2>Игра окончена</h2>
+    <p>Сердца закончились. Попробуйте снова!</p>
+    <p>Счёт: <span id="finalScore">0</span></p>
+    <button id="restart">Начать заново</button>
+  </div>
 </div>
 <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 <script>
@@ -59,14 +85,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 const canvas=document.createElement('canvas');
 document.getElementById('app').appendChild(canvas);
 
-const app=new pc.Application(canvas,{
-  graphicsDeviceOptions:{antialias:true,alpha:false}
-});
+const app=new pc.Application(canvas,{graphicsDeviceOptions:{antialias:true,alpha:false}});
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.start();
 
-// Сцена и камера
 const scene=app.scene;
 scene.ambientLight=new pc.Color(0.35,0.35,0.4);
 scene.fogColor=new pc.Color(0.55,0.62,0.72);
@@ -77,66 +100,106 @@ camera.addComponent('camera',{fov:60,near:0.1,far:200,clearColor:new pc.Color(0.
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
-light.addComponent('light',{type:'directional',color:new pc.Color(1,0.95,0.8),intensity:1.2,castShadows:false});
+light.addComponent('light',{type:'directional',color:new pc.Color(1,0.95,0.8),intensity:1.1,castShadows:false});
 light.setEulerAngles(45,30,0);
 app.root.addChild(light);
 
-// Материалы
 function mat(color,emissive){
   const m=new pc.StandardMaterial();
   m.diffuse=new pc.Color(color[0],color[1],color[2]);
-  if(emissive){m.emissive=new pc.Color(emissive[0],emissive[1],emissive[2]);m.emissiveIntensity=0.8;}
-  m.update();
-  return m;
+  if(emissive){m.emissive=new pc.Color(emissive[0],emissive[1],emissive[2]);m.emissiveIntensity=0.9;}
+  m.update();return m;
 }
 const grassMat=mat([0.42,0.62,0.35]);
 const dirtMat=mat([0.45,0.32,0.2]);
-const goldMat=mat([0.85,0.65,0.25],[0.5,0.35,0.1]);
-const blueMat=mat([0.4,0.7,0.8],[0.1,0.35,0.45]);
-const purpleMat=mat([0.6,0.45,0.85],[0.25,0.15,0.45]);
+const mats={
+  gold:mat([0.85,0.65,0.25],[0.5,0.35,0.1]),
+  blue:mat([0.4,0.7,0.8],[0.1,0.35,0.45]),
+  purple:mat([0.6,0.45,0.85],[0.25,0.15,0.45]),
+  green:mat([0.45,0.7,0.4],[0.15,0.35,0.1]),
+  red:mat([0.75,0.3,0.25],[0.35,0.1,0.05])
+};
 
-// Мир: земля 12x12, трава сверху
 const world=new pc.Entity('world');
 app.root.addChild(world);
-const SIZE=12;
+const SIZE=14;
 for(let x=-SIZE/2;x<SIZE/2;x++){
   for(let z=-SIZE/2;z<SIZE/2;z++){
     const e=new pc.Entity();
     e.addComponent('render',{type:'box',material:grassMat});
     e.setLocalPosition(x,0,z);
-    e.setLocalScale(1,1,1);
     world.addChild(e);
   }
 }
 
-// Руды: 12 блоков, 3 типа
-const ores=[];
-const types=[
-  {key:'gold',mat:goldMat,color:[0.85,0.65,0.25]},
-  {key:'blue',mat:blueMat,color:[0.4,0.7,0.8]},
-  {key:'purple',mat:purpleMat,color:[0.6,0.45,0.85]}
-];
-for(let i=0;i<12;i++){
-  const t=types[i%3];
-  const e=new pc.Entity('ore_'+i);
-  e.addComponent('render',{type:'box',material:t.mat});
-  const x=(Math.random()-0.5)*(SIZE-2);
-  const z=(Math.random()-0.5)*(SIZE-2);
-  e.setLocalPosition(x,1,z);
-  e.setLocalScale(0.9,0.9,0.9);
-  e.userData={type:t.key,alive:true};
-  world.addChild(e);
-  ores.push(e);
-}
+// Факелы с освещением
+const torchPositions=[[-5,-5],[5,-5],[-5,5],[5,5]];
+const torchCount=window.matchMedia('(max-width:760px)').matches?2:4;
+torchPositions.slice(0,torchCount).forEach(p=>{
+  const g=new pc.Entity('torch');
+  const post=new pc.Entity();post.addComponent('render',{type:'cylinder',material:mat([0.3,0.2,0.12])});post.setLocalPosition(0,1,0);post.setLocalScale(0.1,2,0.1);g.addChild(post);
+  const lamp=new pc.Entity();lamp.addComponent('render',{type:'sphere',material:mat([1,0.9,0.6],[1,0.8,0.4])});lamp.setLocalPosition(0,2.2,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
+  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,2.2,0);g.addChild(pl);
+  g.setLocalPosition(p[0],0,p[1]);world.addChild(g);
+});
 
-// Инвентарь
-const inv={gold:0,blue:0,purple:0};
+// Типы блоков
+const types=[
+  {key:'gold',label:'золото',mat:mats.gold},
+  {key:'blue',label:'кристалл',mat:mats.blue},
+  {key:'purple',label:'руна',mat:mats.purple},
+  {key:'green',label:'семя',mat:mats.green},
+  {key:'red',label:'опасный блок',mat:mats.red}
+];
+const questTypes=['gold','blue','purple','green'];
+
+let questType='gold';
+let hearts=3,maxHearts=5,food=0,score=0,gameOver=false;
+const ores=[];
+
+function randPos(){
+  return [(Math.random()-0.5)*(SIZE-2),1,(Math.random()-0.5)*(SIZE-2)];
+}
+function spawnOre(typeKey){
+  const t=types.find(t=>t.key===typeKey);
+  const e=new pc.Entity('ore_'+typeKey+'_'+Math.random().toString(36).slice(2));
+  e.addComponent('render',{type:'box',material:t.mat});
+  const p=randPos();e.setLocalPosition(p[0],p[1],p[2]);
+  e.setLocalScale(0.9,0.9,0.9);
+  e.userData={type:typeKey,alive:true};
+  world.addChild(e);ores.push(e);
+  return e;
+}
+function spawnInitial(){
+  questTypes.forEach(k=>{for(let i=0;i<4;i++)spawnOre(k);});
+  for(let i=0;i<4;i++)spawnOre('red');
+}
+spawnInitial();
+
+function setQuest(){
+  questType=questTypes[Math.floor(Math.random()*questTypes.length)];
+  const t=types.find(t=>t.key===questType);
+  document.getElementById('questText').textContent='Добудь: '+t.label;
+  const dot=document.getElementById('questDot');
+  dot.className='dot '+questType;
+}
+setQuest();
+
+function renderHearts(){
+  const el=document.getElementById('hearts');
+  el.innerHTML='';
+  for(let i=0;i<maxHearts;i++){
+    const s=document.createElement('span');
+    s.className='heart'+(i<hearts?'':' empty');
+    s.textContent='❤';
+    el.appendChild(s);
+  }
+}
 function updateHUD(){
-  document.getElementById('c-gold').textContent=inv.gold;
-  document.getElementById('c-blue').textContent=inv.blue;
-  document.getElementById('c-purple').textContent=inv.purple;
-  const total=inv.gold+inv.blue+inv.purple;
-  document.getElementById('total').textContent=total;
+  document.getElementById('score').textContent=score;
+  document.getElementById('foodCount').textContent=food;
+  document.getElementById('foodSlotCount').textContent=food;
+  renderHearts();
 }
 updateHUD();
 
@@ -145,8 +208,12 @@ function toast(text){
   el.textContent=text;el.classList.add('show');
   clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1200);
 }
+function flash(){
+  const el=document.getElementById('flash');
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);
+}
 
-// Управление камерой: орбита
+// Камера: орбита
 let yaw=0,pitch=0.5,dist=16;
 const target=new pc.Vec3(0,1,0);
 function updateCamera(){
@@ -158,44 +225,30 @@ function updateCamera(){
 }
 updateCamera();
 
-// Ввод: перетаскивание и добыча
+// Ввод
 let dragging=false,lastX=0,lastY=0,moved=false;
-function onDown(e){
-  dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;
-}
+function onDown(e){dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;}
 function onMove(e){
   if(!dragging)return;
   const dx=e.clientX-lastX,dy=e.clientY-lastY;
   if(Math.abs(dx)+Math.abs(dy)>4)moved=true;
   yaw-=dx*0.005;pitch=Math.min(1.2,Math.max(0.1,pitch+dy*0.004));
-  lastX=e.clientX;lastY=e.clientY;
-  updateCamera();
+  lastX=e.clientX;lastY=e.clientY;updateCamera();
 }
 function onUp(e){
   dragging=false;
   if(!moved)mineAt(e.clientX,e.clientY);
 }
 function mineAt(cx,cy){
-  // Луч из камеры через точку экрана
+  if(gameOver)return;
   const ndcX=(cx/window.innerWidth)*2-1;
   const ndcY=1-(cy/window.innerHeight)*2;
   const camPos=camera.getLocalPosition().clone();
-  const dir=new pc.Vec3();
-  // Приближенно: направление к точке на плоскости перед камерой
-  const forward=new pc.Vec3();
-  camera.getWorldTransform().transformVector(new pc.Vec3(0,0,-1),forward);
-  const right=new pc.Vec3();
-  camera.getWorldTransform().transformVector(new pc.Vec3(1,0,0),right);
-  const up=new pc.Vec3();
-  camera.getWorldTransform().transformVector(new pc.Vec3(0,1,0),up);
-  const fov=60*Math.PI/180;
-  const tanF=Math.tan(fov/2);
-  const aspect=window.innerWidth/window.innerHeight;
-  dir.copy(forward)
-    .add(right.clone().scale(ndcX*tanF*aspect))
-    .add(up.clone().scale(ndcY*tanF))
-    .normalize();
-  // Поиск ближайшей руды вдоль луча
+  const forward=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(0,0,-1),forward);
+  const right=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(1,0,0),right);
+  const up=new pc.Vec3();camera.getWorldTransform().transformVector(new pc.Vec3(0,1,0),up);
+  const fov=60*Math.PI/180,tanF=Math.tan(fov/2),aspect=window.innerWidth/window.innerHeight;
+  const dir=forward.clone().add(right.clone().scale(ndcX*tanF*aspect)).add(up.clone().scale(ndcY*tanF)).normalize();
   let best=null,bestT=Infinity;
   ores.forEach(o=>{
     if(!o.userData.alive)return;
@@ -207,24 +260,48 @@ function mineAt(cx,cy){
     const d=closest.distance(p);
     if(d<0.75&&t<bestT){best=o;bestT=t;}
   });
-  if(best){
-    best.userData.alive=false;
-    inv[best.userData.type]++;
-    updateHUD();
-    toast('Добыт ресурс: '+best.userData.type);
-    // Анимация исчезновения
-    let s=1;
-    const shrink=()=>{
-      s-=0.15;
-      if(s<=0){world.removeChild(best);return;}
-      best.setLocalScale(s,s,s);
-      requestAnimationFrame(shrink);
-    };
-    shrink();
+  if(!best){toast('Мимо. Ищите светящиеся блоки.');return;}
+  const type=best.userData.type;
+  best.userData.alive=false;
+  // Анимация исчезновения
+  let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
+  if(type===questType){
+    food++;score++;toast('Верно! Получена еда.');
+    setTimeout(()=>spawnOre(type),1500);
+  }else if(type==='red'){
+    hearts-=2;flash();toast('Опасный блок! -2 сердца');
+    setTimeout(()=>spawnOre('red'),2000);
   }else{
-    toast('Мимо. Ищите светящиеся блоки.');
+    hearts-=1;flash();toast('Неправильный блок. -1 сердце');
+    setTimeout(()=>spawnOre(type),1500);
+  }
+  updateHUD();
+  if(hearts<=0){
+    gameOver=true;
+    document.getElementById('finalScore').textContent=score;
+    document.getElementById('gameover').classList.add('show');
   }
 }
+
+// Хотбар: еда лечит
+document.getElementById('foodSlot').addEventListener('click',()=>{
+  if(gameOver)return;
+  if(food>0&&hearts<maxHearts){food--;hearts++;toast('Вы отхилились на 1 сердце.');}
+  else if(food<=0){toast('Нет еды. Добывайте нужные блоки.');}
+  else{toast('Сердца уже полные.');}
+  updateHUD();
+});
+
+// Перезапуск
+document.getElementById('restart').addEventListener('click',()=>{
+  hearts=3;food=0;score=0;gameOver=false;
+  document.getElementById('gameover').classList.remove('show');
+  // Удалить все блоки и заспавнить заново
+  ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
+  ores.length=0;
+  spawnInitial();setQuest();updateHUD();
+  toast('Игра начата заново.');
+});
 
 canvas.addEventListener('pointerdown',onDown);
 window.addEventListener('pointermove',onMove);
@@ -233,7 +310,6 @@ canvas.addEventListener('touchstart',e=>{const t=e.touches[0];onDown(t);},{passi
 window.addEventListener('touchmove',e=>{const t=e.touches[0];onMove(t);},{passive:true});
 window.addEventListener('touchend',e=>{onUp(e.changedTouches[0]);},{passive:true});
 
-// Ресайз
 window.addEventListener('resize',()=>{
   app.resizeCanvas(window.innerWidth,window.innerHeight);
   camera.camera.aspect=window.innerWidth/window.innerHeight;
