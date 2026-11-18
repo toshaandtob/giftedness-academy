@@ -26,7 +26,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .icon.backpack{background:linear-gradient(135deg,#a1887f,#5d4037)}
 .icon.letter{background:linear-gradient(135deg,#fff8e1,#d9a441)}
 .icon.block{background:linear-gradient(135deg,#cfd8dc,#78909c)}
-#joystick{position:absolute;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);pointer-events:none;display:none;transform-origin:center;transform:scale(var(--btnScale))}
+#joystick{position:absolute;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.3);pointer-events:none;display:block;transform-origin:center;transform:scale(var(--btnScale))}
 #joyKnob{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
 #jumpBtn{position:absolute;right:24px;bottom:110px;width:64px;height:64px;border-radius:50%;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:24px;pointer-events:auto;display:grid;place-items:center;cursor:pointer;transform-origin:center;transform:scale(var(--btnScale))}
 #settingsBtn{position:absolute;right:24px;top:70px;width:40px;height:40px;border-radius:10px;background:rgba(20,20,20,.6);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;pointer-events:auto;cursor:pointer;display:grid;place-items:center}
@@ -165,9 +165,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>Телефон:</b> левая половина экрана — джойстик (движение), правая — поворот камеры (свайп). Кнопка ⤒ — прыжок. Размер кнопок настраивается через ⚙.</p>
+    <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок — через ⚙.</p>
     <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок.</p>
-    <p><b>День и ночь:</b> солнце сменяется луной, небо темнеет, облака плывут.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -994,9 +993,12 @@ let dragging=false,lastX=0,lastY=0,moved=false,moveDist=0;
 const MOUSE_SENS_X=0.009;
 const MOUSE_SENS_Y=0.007;
 const JOY_MAX=50;
-function resetJoyUI(){
+function joyCenter(){
   const j=document.getElementById('joystick');
-  j.style.display='none';
+  const r=j.getBoundingClientRect();
+  return {x:r.left+r.width/2,y:r.top+r.height/2};
+}
+function resetJoyKnob(){
   document.getElementById('joyKnob').style.transform='translate(-50%,-50%)';
 }
 canvas.addEventListener('pointerdown',e=>{
@@ -1005,11 +1007,8 @@ canvas.addEventListener('pointerdown',e=>{
     return;
   }
   if(e.clientX<window.innerWidth/2&&joy.id===null){
-    joy.id=e.pointerId;joy.active=true;joy.ox=e.clientX;joy.oy=e.clientY;joy.dx=0;joy.dy=0;
-    const j=document.getElementById('joystick');
-    j.style.display='block';
-    j.style.left=(e.clientX-60)+'px';
-    j.style.top=(e.clientY-60)+'px';
+    const c=joyCenter();
+    joy.id=e.pointerId;joy.active=true;joy.ox=c.x;joy.oy=c.y;joy.dx=0;joy.dy=0;
   }else if(lookId===null){
     lookId=e.pointerId;moved=false;moveDist=0;lastX=e.clientX;lastY=e.clientY;
   }
@@ -1050,7 +1049,7 @@ function endPointer(e){
     return;
   }
   if(e.pointerId===joy.id){
-    joy.id=null;joy.active=false;joy.dx=0;joy.dy=0;resetJoyUI();
+    joy.id=null;joy.active=false;joy.dx=0;joy.dy=0;resetJoyKnob();
   }
   if(e.pointerId===lookId){
     lookId=null;
