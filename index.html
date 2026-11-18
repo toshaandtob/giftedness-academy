@@ -5,33 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Психолого-педагогическая диагностика способностей и одаренности</title>
 <meta name="description" content="Интерактивная образовательная страница по психолого-педагогической диагностике способностей и одаренности.">
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Marcellus&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="magic-layer" aria-hidden="true">
+<div class="atmosphere" aria-hidden="true">
+  <div class="aurora"></div>
   <div class="fog"></div>
-  <div class="leaves"></div>
-  <div class="fireflies"></div>
-  <div class="dust"></div>
+  <div id="particles"></div>
 </div>
 
 <header class="topbar">
-  <a class="brand" href="#gates">✦ Академия Одаренности</a>
+  <a class="brand" href="#gates"><span class="brand-rune">✦</span> Академия Одаренности</a>
   <nav class="main-nav" aria-label="Навигация по лекции">
-    <a href="#map">Карта</a>
-    <a href="#concepts">Понятия</a>
-    <a href="#approaches">Подходы</a>
-    <a href="#factors">Факторы</a>
-    <a href="#herzen">Герценовцы</a>
-    <a href="#creativity">Креативность</a>
-    <a href="#savenkov">Савенков</a>
-    <a href="#shumakova">Шумакова</a>
-    <a href="#tests">Тесты</a>
-    <a href="#observer">Наблюдатель</a>
-    <a href="#ai">ИИ</a>
-    <a href="#wisdom">Выводы</a>
-    <a href="#library">Литература</a>
+    <a href="#map">Карта</a><a href="#concepts">Понятия</a><a href="#approaches">Подходы</a><a href="#factors">Факторы</a><a href="#herzen">Герценовцы</a><a href="#creativity">Креативность</a><a href="#savenkov">Савенков</a><a href="#shumakova">Шумакова</a><a href="#tests">Тесты</a><a href="#observer">Наблюдатель</a><a href="#ai">ИИ</a><a href="#wisdom">Выводы</a><a href="#library">Литература</a>
   </nav>
   <div class="progress-wrap"><div id="progressBar"></div></div>
 </header>
@@ -45,11 +34,11 @@
     <p class="lead">Одаренность не сводится к высокому баллу теста. Это развивающееся системное качество психики, которое проявляется в познавательной активности, творчестве, мотивации, настойчивости и поддерживающей образовательной среде. Диагностика помогает не «отобрать» ребенка, а вовремя заметить его возможности и создать условия для развития.</p>
     <a class="btn" href="#map">Начать путь</a>
   </div>
-  <div class="scene-box" data-scene="gates" aria-label="3D-сцена: врата академии"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="gates" aria-label="3D-сцена: врата академии"></div></div>
 </section>
 
 <section id="map" class="section">
-  <h2>Карта пути</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Карта пути</h2></div>
   <p class="section-lead">Лекция проходит через несколько остановок: от базовых понятий — к методикам, роли педагога, возможностям ИИ и выводам.</p>
   <div class="map-path">
     <a href="#concepts" class="map-stop"><span>1</span>Библиотека понятий</a>
@@ -67,7 +56,7 @@
 </section>
 
 <section id="concepts" class="section">
-  <h2>Библиотека понятий</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Библиотека понятий</h2></div>
   <p class="section-lead">Прежде чем измерять способности, важно понять язык диагностики. Главная мысль: одаренность — не статичный набор высоких способностей, а системное качество психики, развивающееся в течение жизни.</p>
   <div class="cards">
     <article class="card"><h3>Одаренность</h3><p>Системное качество психики, которое развивается в течение жизни и определяет более высокие возможности в познавательной, творческой, художественной, двигательной или социальной деятельности.</p><p class="example">Пример: ребенок не обязательно блестяще решает все задачи, но может необычно ставить вопросы, долго исследовать тему и предлагать оригинальные решения.</p></article>
@@ -78,34 +67,31 @@
     <article class="card"><h3>Мотивация</h3><p>Внутреннее стремление к деятельности, интересу, достижению цели и преодолению трудностей. Для развития одаренности важна не только способность, но и желание заниматься делом.</p><p class="example">Пример: ученик самостоятельно возвращается к сложной задаче, потому что ему интересно найти решение.</p></article>
     <article class="card"><h3>Познавательная активность</h3><p>Инициативное стремление узнавать, спрашивать, исследовать, проверять и расширять границы известного.</p><p class="example">Пример: после урока ребенок приносит дополнительные вопросы, книги или собственные наблюдения по теме.</p></article>
   </div>
-
   <div class="game" id="game-scroll">
-    <h3>Игра: «Собери свиток»</h3>
-    <p>Выберите понятие, затем нажмите подходящий фрагмент определения. Игра сохраняется в вашем браузере.</p>
-    <div class="match-game" data-game="scroll"></div>
+    <div class="game-head"><h3>Игра: «Собери свиток»</h3><p>Перетащите свитки-понятия на подходящие строки определения. Работает мышью и пальцем.</p><div class="game-meta"><span class="score" data-score="scroll">0 / 5</span><button class="btn small ghost" data-restart="scroll">Заново</button></div></div>
+    <div class="game-board" data-game="scroll"></div>
     <p class="feedback" data-feedback="scroll"></p>
   </div>
 </section>
 
 <section id="approaches" class="section">
-  <h2>Башня Трёх Подходов</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Башня Трёх Подходов</h2></div>
   <p class="section-lead">В диагностике одаренности существуют разные взгляды: от измерения интеллекта до понимания одаренности как сложной системы.</p>
   <div class="cards three">
     <article class="card"><h3>Психометрический подход</h3><p>Опирается на стандартизированные измерения интеллекта и креативности. Используются шкалы Векслера, прогрессивные матрицы Равена, тест структуры интеллекта Амтхауэра, тесты Торренса.</p><p><strong>Ограничения:</strong> тесты не всегда улавливают мотивацию, настойчивость и специфические виды одаренности. Условия выполнения могут быть неравными для детей из разных социокультурных сред.</p></article>
     <article class="card"><h3>Многомерный подход</h3><p>Одаренность рассматривается как сочетание нескольких условий. В модели Рензулли это способности выше среднего, креативность и высокая мотивация. Теория множественных интеллектов Гарднера подчеркивает разные виды способностей.</p><p><strong>Смысл:</strong> нельзя судить о ребенке только по одному общему показателю.</p></article>
     <article class="card"><h3>Системный подход</h3><p>«Рабочая концепция одаренности» под редакцией Д. Б. Богоявленской рассматривает одаренность как систему. В нее входят когнитивный, мотивационный, эмоциональный и волевой компоненты.</p><p><strong>Смысл:</strong> важны не только результаты, но и то, как ребенок думает, чувствует, выбирает и действует.</p></article>
   </div>
-  <div class="scene-box" data-scene="tower" aria-label="3D-сцена: башня трех подходов"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="tower" aria-label="3D-сцена: башня трех подходов"></div></div>
   <div class="game" id="game-tower">
-    <h3>3D-игра: «Башня Трёх Подходов»</h3>
-    <p>Вращайте башню мышью или пальцем, затем распределите утверждения по подходам.</p>
-    <div class="sort-game" data-game="tower" data-categories="Психометрический,Многомерный,Системный"></div>
+    <div class="game-head"><h3>Игра: «Башня Трёх Подходов»</h3><p>Перетащите магические кирпичи-утверждения на нужные этажи башни.</p><div class="game-meta"><span class="score" data-score="tower">0 / 6</span><button class="btn small ghost" data-restart="tower">Заново</button></div></div>
+    <div class="game-board" data-game="tower"></div>
     <p class="feedback" data-feedback="tower"></p>
   </div>
 </section>
 
 <section id="factors" class="section">
-  <h2>Лес Факторов</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Лес Факторов</h2></div>
   <p class="section-lead">На диагностику влияют возраст, семья, школа, культура, мотивация и условия, в которых ребенок живет и учится.</p>
   <div class="cards">
     <article class="card"><h3>Возрастная динамика</h3><p>Способности и проявления одаренности меняются с возрастом. Раннее развитие речи или чтения может быть признаком высоких возможностей, но не является достаточным доказательством одаренности.</p></article>
@@ -115,17 +101,16 @@
     <article class="card"><h3>Трудности одаренных детей</h3><p>Высокая чувствительность, перфекционизм, скука при недостаточной нагрузке, тревожность и высокие ожидания взрослых могут мешать проявлению способностей.</p></article>
     <article class="card"><h3>Субъективность оценок</h3><p>Педагоги и родители могут замечать ярких, активных или успешных детей чаще, чем тихих, необычных или скрыто одаренных. Поэтому важны разные источники информации.</p></article>
   </div>
-  <div class="scene-box" data-scene="forest" aria-label="3D-сцена: светлый волшебный лес"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="forest" aria-label="3D-сцена: светлый волшебный лес"></div></div>
   <div class="game" id="game-fireflies">
-    <h3>3D-игра: «Светлячки скрытой одаренности»</h3>
-    <p>Найдите в лесу светлячки с факторами, которые действительно влияют на диагностику одаренности.</p>
-    <div class="find-game" data-game="fireflies"></div>
+    <div class="game-head"><h3>Игра: «Светлячки скрытой одаренности»</h3><p>Найдите 5 светлячков с факторами, которые действительно влияют на диагностику одаренности.</p><div class="game-meta"><span class="score" data-score="fireflies">0 / 5</span><button class="btn small ghost" data-restart="fireflies">Заново</button></div></div>
+    <div class="game-board" data-game="fireflies"></div>
     <p class="feedback" data-feedback="fireflies"></p>
   </div>
 </section>
 
 <section id="herzen" class="section">
-  <h2>Башня Герценовцев</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Башня Герценовцев</h2></div>
   <p class="section-lead">Ученые РГПУ им. А. И. Герцена внесли важный вклад в изучение одаренности, креативности и образовательной среды.</p>
   <div class="cards four">
     <article class="card"><h3>А. И. Савенков</h3><p>Рассматривал интеллектуально-творческий потенциал и познавательную активность. Подчеркивал значение пролонгированного наблюдения за ребенком в разных видах деятельности.</p></article>
@@ -134,40 +119,30 @@
     <article class="card"><h3>В. Н. Дружинин</h3><p>Внес вклад в психометрику, психологию интеллекта и креативности. Высокий IQ не гарантирует творческих способностей: интеллект и креативность связаны, но не совпадают.</p></article>
   </div>
   <div class="game" id="game-herzen">
-    <h3>Интерактив: «Соотнеси ученого и вклад»</h3>
-    <div class="match-game" data-game="herzen"></div>
+    <div class="game-head"><h3>Игра: «Соотнеси ученого и вклад»</h3><p>Перетащите портреты-медальоны ученых на их вклад.</p><div class="game-meta"><span class="score" data-score="herzen">0 / 4</span><button class="btn small ghost" data-restart="herzen">Заново</button></div></div>
+    <div class="game-board" data-game="herzen"></div>
     <p class="feedback" data-feedback="herzen"></p>
   </div>
 </section>
 
 <section id="creativity" class="section">
-  <h2>Мастерская «Креативное поле»</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Мастерская «Креативное поле»</h2></div>
   <p class="section-lead">Метод Д. Б. Богоявленской направлен на то, чтобы увидеть не только правильный ответ, но и способность ребенка развивать деятельность по собственной инициативе.</p>
   <div class="cards three">
     <article class="card"><h3>Главная идея</h3><p>Диагностируется не только результат решения задачи, но и готовность продолжить исследование: заметить закономерность, задать новый вопрос, предложить дополнительный вариант решения.</p></article>
     <article class="card"><h3>Уровни деятельности</h3><p><strong>Стимульно-продуктивный уровень:</strong> человек действует в рамках заданных условий и получает требуемый результат. <strong>Эвристический уровень:</strong> человек выходит за пределы инструкции, открывает новые способы и продолжает деятельность.</p></article>
     <article class="card"><h3>Модификации метода</h3><p>Используются варианты «Звери в цирке», «Морской бой» и «Сказочные шахматы». Методика требует высокой квалификации экспериментатора, имеет подтвержденную валидность, но проведение занимает длительное время.</p></article>
   </div>
-  <div class="scene-box" data-scene="field" aria-label="3D-сцена: мастерская креативного поля"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="field" aria-label="3D-сцена: мастерская креативного поля"></div></div>
   <div class="game" id="game-field">
-    <h3>3D-игра: «Испытание Креативного поля»</h3>
-    <p>Перед вами последовательность: 2, 4, 8, 16. Найдите закономерность. Но настоящая награда — за исследовательскую инициативу.</p>
-    <div class="creative-field">
-      <div class="field-row">2 → 4 → 8 → 16 → <input id="fieldAnswer" inputmode="numeric" placeholder="?" aria-label="Продолжите последовательность"> <button class="btn small" data-action="check-field">Проверить</button></div>
-      <div class="initiative-box">
-        <p>Что вы можете исследовать дальше?</p>
-        <button class="chip" data-initiative="1">Проверить, что будет дальше</button>
-        <button class="chip" data-initiative="2">Найти другое правило</button>
-        <button class="chip" data-initiative="3">Придумать свою последовательность</button>
-        <button class="chip" data-initiative="4">Объяснить закономерность словами</button>
-      </div>
-      <p class="feedback" data-feedback="field"></p>
-    </div>
+    <div class="game-head"><h3>Игра: «Испытание Креативного поля»</h3><p>Найдите закономерность и проявите исследовательскую инициативу.</p><div class="game-meta"><span class="score" data-score="field">0 / 5</span><button class="btn small ghost" data-restart="field">Заново</button></div></div>
+    <div class="game-board" data-game="field"></div>
+    <p class="feedback" data-feedback="field"></p>
   </div>
 </section>
 
 <section id="savenkov" class="section">
-  <h2>Кабинет Савенкова</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Кабинет Савенкова</h2></div>
   <p class="section-lead">Методики А. И. Савенкова помогают составить профиль сильных сторон ребенка, а не заменить его одним баллом.</p>
   <div class="cards">
     <article class="card"><h3>«Карта одаренности»</h3><p>Помогает системно собрать информацию о проявлениях способностей ребенка в разных сферах.</p></article>
@@ -176,14 +151,14 @@
   </div>
   <p class="note">Оцениваются интеллектуальная, творческая, академическая, художественно-изобразительная, музыкальная, литературная, артистическая, техническая, информационная, спортивная и социальная сферы. Результат — профиль сильных сторон, а не единый балл.</p>
   <div class="game" id="game-profile">
-    <h3>Интерактив: «Собери профиль одаренности»</h3>
-    <div class="sort-game" data-game="profile" data-categories="Интеллектуальная,Творческая,Художественная,Спортивная,Социальная"></div>
+    <div class="game-head"><h3>Игра: «Собери профиль одаренности»</h3><p>Перетащите характеристики в подходящие сферы профиля.</p><div class="game-meta"><span class="score" data-score="profile">0 / 7</span><button class="btn small ghost" data-restart="profile">Заново</button></div></div>
+    <div class="game-board" data-game="profile"></div>
     <p class="feedback" data-feedback="profile"></p>
   </div>
 </section>
 
 <section id="shumakova" class="section">
-  <h2>Сад Креативности</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Сад Креативности</h2></div>
   <p class="section-lead">Методика «Образная и вербальная креативность» Н. Б. Шумаковой помогает увидеть разные стороны творческого мышления младших школьников.</p>
   <div class="cards two">
     <article class="card"><h3>Вербальная часть</h3><p>Ребенку предлагают завершать предложения, придумывать рассказы и находить необычные способы использования предметов. Здесь проявляются речь, воображение и гибкость мышления.</p></article>
@@ -196,90 +171,75 @@
     <div><strong>Разработанность</strong><span>детализация и завершенность идеи</span></div>
   </div>
   <p class="note">Методика апробирована на 200 учащихся начальных классов и чувствительна к возрастной динамике развития креативности.</p>
-  <div class="scene-box" data-scene="garden" aria-label="3D-сцена: сад идей"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="garden" aria-label="3D-сцена: сад идей"></div></div>
   <div class="game" id="game-garden">
-    <h3>3D-игра: «Сад идей»</h3>
-    <p>Выберите разные способы использования обычного предмета — например, карандаша. Каждая новая категория идей «выращивает» растение в саду.</p>
-    <div class="idea-garden">
-      <div class="idea-buttons">
-        <button class="chip" data-idea="рисование">Рисовать</button>
-        <button class="chip" data-idea="измерение">Измерять</button>
-        <button class="chip" data-idea="игра">Играть</button>
-        <button class="chip" data-idea="инструмент">Использовать как инструмент</button>
-        <button class="chip" data-idea="искусство">Создавать арт-объект</button>
-        <button class="chip" data-idea="наука">Проводить опыт</button>
-      </div>
-      <div class="garden-status" data-garden></div>
-      <p class="feedback" data-feedback="garden"></p>
-    </div>
+    <div class="game-head"><h3>Игра: «Сад идей»</h3><p>Перетащите семена идей на грядки сада. Каждая новая категория выращивает цветок.</p><div class="game-meta"><span class="score" data-score="garden">0 / 6</span><button class="btn small ghost" data-restart="garden">Заново</button></div></div>
+    <div class="game-board" data-game="garden"></div>
+    <p class="feedback" data-feedback="garden"></p>
   </div>
 </section>
 
 <section id="tests" class="section">
-  <h2>Испытательная башня тестов</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Испытательная башня тестов</h2></div>
   <p class="section-lead">Тесты интеллекта и креативности отвечают на разные вопросы. Важно понимать, что именно измеряет методика.</p>
   <div class="cards two">
     <article class="card"><h3>Тесты интеллекта</h3><p><strong>Шкалы Векслера</strong> оценивают разные стороны интеллектуального функционирования. <strong>Прогрессивные матрицы Равена</strong> выявляют способность устанавливать закономерности. <strong>Тест структуры интеллекта Амтхауэра</strong> исследует структуру интеллектуальных способностей. <strong>ШТУР</strong> направлен на оценку умственного развития школьников.</p></article>
     <article class="card"><h3>Тесты креативности</h3><p><strong>Тесты Гилфорда</strong> исследуют дивергентное мышление. <strong>Тесты Торренса</strong> оценивают творческое мышление через образные и вербальные задания. <strong>Тест Медника</strong> связан с ассоциативным мышлением и способностью находить отдаленные связи.</p></article>
   </div>
-  <div class="scene-box" data-scene="altar" aria-label="3D-сцена: магический алтарь с артефактами"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="altar" aria-label="3D-сцена: магический алтарь с артефактами"></div></div>
   <div class="game" id="game-artifacts">
-    <h3>3D-игра: «Испытание артефактов»</h3>
-    <p>Соотнесите методики с тем, что они измеряют.</p>
-    <div class="match-game" data-game="artifacts"></div>
+    <div class="game-head"><h3>Игра: «Испытание артефактов»</h3><p>Перетащите свитки-артефакты на пьедесталы с измеряемыми качествами.</p><div class="game-meta"><span class="score" data-score="artifacts">0 / 6</span><button class="btn small ghost" data-restart="artifacts">Заново</button></div></div>
+    <div class="game-board" data-game="artifacts"></div>
     <p class="feedback" data-feedback="artifacts"></p>
   </div>
 </section>
 
 <section id="observer" class="section">
-  <h2>Зал Наблюдателя</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Зал Наблюдателя</h2></div>
   <p class="section-lead">Педагог видит ребенка дольше и в разных ситуациях, чем психолог при разовом тестировании. Поэтому структурированное наблюдение — важная часть диагностики.</p>
   <div class="cards two">
     <article class="card"><h3>Что наблюдает педагог</h3><p>Познавательную активность, настойчивость, оригинальность мышления, интерес к сложным задачам, самостоятельность, способы сотрудничества и реакцию на трудности.</p></article>
     <article class="card"><h3>Продуктивная стратегия</h3><p>Не «выискивать» одаренных, а создавать среду, где способности могут проявиться: обогащенные программы, проекты, исследования, олимпиады, соревнования, творческие мастерские.</p></article>
   </div>
-  <div class="scene-box" data-scene="observer" aria-label="3D-сцена: наблюдатель в академии"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="observer" aria-label="3D-сцена: наблюдатель в академии"></div></div>
   <div class="game" id="game-observer">
-    <h3>3D-сцена: «Наблюдатель в академии»</h3>
-    <p>Осмотрите учебную сцену и найдите проявления познавательной активности, настойчивости и оригинальности мышления.</p>
-    <div class="find-game" data-game="observer"></div>
+    <div class="game-head"><h3>Игра: «Наблюдатель в академии»</h3><p>Найдите 4 проявления познавательной активности, настойчивости и оригинальности мышления.</p><div class="game-meta"><span class="score" data-score="observer">0 / 4</span><button class="btn small ghost" data-restart="observer">Заново</button></div></div>
+    <div class="game-board" data-game="observer"></div>
     <p class="feedback" data-feedback="observer"></p>
   </div>
 </section>
 
 <section id="ai" class="section">
-  <h2>Зеркало ИИ</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Зеркало ИИ</h2></div>
   <p class="section-lead">Искусственный интеллект может помочь педагогу увидеть закономерности, но не должен заменять профессиональное понимание ребенка.</p>
   <div class="cards two">
     <article class="card"><h3>Возможности ИИ</h3><p>Анализ больших данных, выявление паттернов учебной деятельности, автоматизированная оценка некоторых продуктов творчества, адаптивное тестирование и помощь в подготовке материалов.</p></article>
     <article class="card"><h3>Риски ИИ</h3><p>ИИ может воспроизводить социокультурные смещения, не понимать контекст, сводить одаренность к легко оцифровываемым параметрам и создавать впечатление объективности там, где нужна экспертная оценка.</p></article>
   </div>
   <div class="game" id="game-ai">
-    <h3>Игра: «Советник или оракул?»</h3>
-    <p>Распределите утверждения: что относится к возможностям ИИ, а что — к рискам.</p>
-    <div class="sort-game" data-game="ai" data-categories="Возможности ИИ,Риски ИИ"></div>
+    <div class="game-head"><h3>Игра: «Советник или оракул?»</h3><p>Перетащите карточки в одно из двух зеркал: возможностей или рисков ИИ.</p><div class="game-meta"><span class="score" data-score="ai">0 / 6</span><button class="btn small ghost" data-restart="ai">Заново</button></div></div>
+    <div class="game-board" data-game="ai"></div>
     <p class="feedback" data-feedback="ai"></p>
   </div>
 </section>
 
 <section id="wisdom" class="section">
-  <h2>Зал Мудрости</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Зал Мудрости</h2></div>
   <div class="cards three">
     <article class="card"><h3>Диагностика — процесс</h3><p>Это не единичный акт измерения, а процесс, встроенный в образовательную практику и развитие ребенка.</p></article>
     <article class="card"><h3>Тесты — часть картины</h3><p>Тесты полезны, но должны дополняться наблюдением, анализом продуктов деятельности и экспертными оценками.</p></article>
     <article class="card"><h3>Главный диагност — учитель</h3><p>Учитель создает среду, где способности могут проявиться: предлагает выбор, поддержку, сложные задачи и возможности для исследования.</p></article>
   </div>
-  <div class="scene-box" data-scene="charter" aria-label="3D-сцена: зал совета академии"></div>
+  <div class="scene-frame"><div class="scene-box" data-scene="charter" aria-label="3D-сцена: зал совета академии"></div></div>
   <div class="game" id="game-charter">
-    <h3>Финальный 3D-квест: «Совет Академии»</h3>
-    <p>Соберите «Хартию одаренности»: выберите все правильные принципы.</p>
-    <div class="quest-game" data-game="charter"></div>
+    <div class="game-head"><h3>Финальный квест: «Совет Академии»</h3><p>Перетащите печати-принципы на Хартию одаренности. Ложные печати не прикрепятся.</p><div class="game-meta"><span class="score" data-score="charter">0 / 5</span><button class="btn small ghost" data-restart="charter">Заново</button></div></div>
+    <div class="game-board" data-game="charter"></div>
     <p class="feedback" data-feedback="charter"></p>
   </div>
 </section>
 
 <section id="library" class="section library">
-  <h2>Библиотека Знаний</h2>
+  <div class="section-head"><span class="rune">❖</span><h2>Библиотека Знаний</h2></div>
   <p class="section-lead">Список источников лекции.</p>
   <ol class="sources">
     <li>Рабочая концепция одаренности / под ред. Д. Б. Богоявленской. М., 2003.</li>
@@ -293,9 +253,7 @@
 </section>
 </main>
 
-<footer class="footer">
-  <p>Интерактивная образовательная страница • Психолого-педагогическая диагностика способностей и одаренности</p>
-</footer>
+<footer class="footer"><p>Интерактивная образовательная страница • Психолого-педагогическая диагностика способностей и одаренности</p></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="js/three-scenes.js"></script>
