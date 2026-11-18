@@ -160,9 +160,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица. <b>ЛКМ</b> — добыть/взаимодействовать. <b>ПКМ</b> — поставить блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p><b>День и ночь:</b> солнце сменяется луной, небо темнеет, облака плывут. Полный цикл — 2 минуты.</p>
-    <p><b>Паркур:</b> между островами — отдельные блоки с промежутками. Прыгайте с блока на блок!</p>
-    <p><b>Шахматы 3D:</b> кликните по ферзю — возьмите его, кликните по пустой клетке — поставьте.</p>
+    <p><b>Хитбоксы блоков:</b> по поставленным блокам и руде можно ходить (как по ступенькам), сквозь них не пройти.</p>
+    <p><b>День и ночь:</b> солнце сменяется луной, небо темнеет, облака плывут.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -283,6 +282,7 @@ const flowerMats=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95])
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
+const ores=[];
 
 const sun=new pc.Entity('sun');
 sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
@@ -420,7 +420,17 @@ function bridgeTop(x,z){
   return null;
 }
 function groundTop(x,z){
-  return locTop(x,z)??bridgeTop(x,z);
+  const base=locTop(x,z)??bridgeTop(x,z);
+  if(base==null)return null;
+  let top=base;
+  for(const o of ores){
+    if(!o.userData.alive)continue;
+    const p=o.getLocalPosition();
+    if(Math.abs(p.x-x)<0.6&&Math.abs(p.z-z)<0.6&&p.y>top&&p.y<=top+1.5){
+      top=p.y;
+    }
+  }
+  return top;
 }
 function cube(x,y,z,m){
   const b=new pc.Entity();
@@ -806,7 +816,6 @@ let questType='gold';
 let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
 const tasks={};
 for(let i=1;i<=12;i++)tasks['t'+i]=false;
-const ores=[];
 const inventory={gold:0,blue:0,purple:0,green:0,red:0};
 const collectedLetters=[];
 let selectedLetter=null;
@@ -1029,7 +1038,7 @@ function placeBlock(){
   world.addChild(b);
   ores.push(b);
   inventory[selectedBlock]--;
-  toast('Блок поставлен: '+selectedBlock);
+  toast('Блок поставлен: '+selectedBlock+'. По нему можно ходить.');
   updateHUD();
 }
 
