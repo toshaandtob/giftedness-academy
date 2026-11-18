@@ -75,35 +75,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
 .gameover p{margin:.3rem 0}
 .gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
-/* ===== МОБИЛЬНЫЙ ИНТЕРФЕЙС: отдельный, минимальный ===== */
 @media(max-width:768px){
-  /* Скрываем книгу квестов на телефоне — она дублирует панель */
   .slot[data-slot="book"]{display:none}
-  /* Панель заданий: очень компактная, свёрнута по умолчанию */
   .panel{max-width:170px;font-size:.7rem;padding:.3rem .5rem}
   .panel h1{font-size:.75rem}
   .panel-body p{font-size:.65rem;margin:.1rem 0}
   .quest .dot{width:10px;height:10px}
   .score{font-size:.8rem}
-  /* Сердца: маленькие, низко, не мешают */
   .hearts{bottom:105px;font-size:13px;gap:1px}
-  /* Крестик меньше */
   .crosshair{width:14px;height:14px;border-width:1.5px}
-  /* Кнопки движения: компактные */
   .pad{grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px);gap:2px;left:6px;bottom:6px}
   .pad button{width:34px;height:34px;font-size:13px;border-width:1.5px}
-  /* Хотбар: только нужное, компактно */
   .hotbar{right:6px;bottom:6px;padding:4px;gap:3px}
   .slot{width:38px;height:38px}
   .slot .icon{width:20px;height:20px;font-size:11px}
   .slot .count{font-size:9px;right:2px;bottom:1px}
-  /* Кнопка действия: меньше */
   .actionBtn{bottom:55px;padding:.35rem .7rem;font-size:.75rem}
-  /* Подсказки: скрыты на телефоне — не мешают */
   .prompt{display:none!important}
-  /* Тосты: меньше */
   .toast{font-size:.7rem;padding:.35rem .6rem;top:12%}
-  /* Модалки: компактные */
   .modal .box{padding:.7rem;max-width:94vw;border-radius:12px}
   .modal h2{font-size:1rem}
   .modal p{font-size:.8rem}
@@ -111,12 +100,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   .quizOpts button{padding:.45rem .7rem;font-size:.8rem}
   .questlist li{font-size:.8rem}
   .invItem{padding:.3rem .4rem;font-size:.8rem}
-  /* Верхняя панель */
   .topbar{left:4px;top:4px;right:4px}
-}
-/* ===== ПК: всё как было ===== */
-@media(min-width:769px){
-  /* Ничего не меняем — ПК-интерфейс остаётся прежним */
 }
 </style>
 </head>
@@ -159,7 +143,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук или поговорить со стражником. <b>E</b> — действие.</p>
+    <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук, поговорить со стражником или прочитать обелиск. <b>E</b> — действие.</p>
     <p>У каждого стражника — 3 задания: 1) прочитай обелиск в центре острова (знания раздела); 2) найди и прочитай письмо-подсказку; 3) ответь на вопрос. Руда нужна только для еды и очков — стражнику она не нужна.</p>
     <button id="startGame">Начать игру</button>
   </div>
@@ -839,7 +823,6 @@ function updateHUD(){
 }
 updateHUD();
 
-// На телефоне панель заданий свёрнута по умолчанию
 if(window.innerWidth<=768){
   document.getElementById('questPanel').classList.add('collapsed');
   document.getElementById('questToggle').textContent='▸';
@@ -971,7 +954,8 @@ function mineAt(cx,cy){
   letterBlocks.forEach(check);
   chests.forEach(check);
   guards.forEach(check);
-  if(!best){toast('Мимо. Ищите блоки, письма, сундуки и стражников.');return;}
+  beacons.forEach(check);
+  if(!best){toast('Мимо. Ищите блоки, письма, сундуки, стражников и обелиски.');return;}
   if(best.userData.letter){
     best.userData.alive=false;
     world.removeChild(best);
@@ -985,6 +969,20 @@ function mineAt(cx,cy){
       if(g.userData.stage===1&&g.userData.loc===best.userData.loc){
         g.userData.stage=2;
         toast('Стражник: ты готов! Поговори со мной.');
+      }
+    });
+    updateHUD();
+    return;
+  }
+  if(best.userData.beacon){
+    const l=LOCS[best.userData.loc];
+    document.getElementById('letterTitle').textContent='Маяк знаний: '+l.name;
+    document.getElementById('letterText').textContent=l.letter;
+    document.getElementById('letterModal').classList.add('show');
+    guards.forEach(g=>{
+      if(g.userData.stage===0&&g.userData.loc===best.userData.loc){
+        g.userData.stage=1;
+        toast('Стражник: теперь найди письмо-подсказку.');
       }
     });
     updateHUD();
@@ -1038,7 +1036,7 @@ function interactGuard(g){
   const u=g.userData;
   if(u.stage===0){
     document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 1: подойди к обелиску в центре острова и нажми E, чтобы прочитать знания раздела. Потом возвращайся ко мне.';
+    document.getElementById('npcText').textContent='Задание 1: подойди к обелиску в центре острова и нажми на него (клик) или E, чтобы прочитать знания раздела. Потом возвращайся ко мне.';
     document.getElementById('quizQ').textContent='';
     document.getElementById('quizOpts').innerHTML='';
     document.getElementById('npcModal').classList.add('show');
@@ -1313,7 +1311,7 @@ app.on('update',dt=>{
     prompt.classList.add('show');
     actionBtn.classList.add('show');
     if(near.userData.chest)prompt.textContent='E / клик — открыть сундук';
-    else if(near.userData.beacon)prompt.textContent='E — прочитать знания';
+    else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
     else prompt.textContent='E / клик — поговорить со стражником';
   }else{
     prompt.classList.remove('show');
