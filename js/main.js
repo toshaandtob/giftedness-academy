@@ -7,15 +7,15 @@
  const host=document.getElementById('particles');
  if(!host)return;
  const mobile=window.matchMedia('(max-width:760px)').matches;
- const counts={leaf:mobile?10:18,fire:mobile?12:22,dust:mobile?16:30};
+ const counts={leaf:mobile?12:20,fire:mobile?14:26,dust:mobile?18:34};
  Object.entries(counts).forEach(([type,count])=>{
   for(let i=0;i<count;i++){
    const el=document.createElement('span');
    el.className='p '+type;
    el.style.left=Math.random()*100+'%';
-   el.style.animationDuration=(12+Math.random()*18)+'s';
-   el.style.animationDelay=(-Math.random()*20)+'s';
-   el.style.setProperty('--dx',(Math.random()*120-60)+'px');
+   el.style.animationDuration=(12+Math.random()*20)+'s';
+   el.style.animationDelay=(-Math.random()*22)+'s';
+   el.style.setProperty('--dx',(Math.random()*140-70)+'px');
    host.appendChild(el);
   }
  });
@@ -27,7 +27,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link=>{
   const target=document.querySelector(link.getAttribute('href'));
   if(!target)return;
   e.preventDefault();
-  window.scrollTo({top:target.getBoundingClientRect().top+window.scrollY-72,behavior:'smooth'});
+  window.scrollTo({top:target.getBoundingClientRect().top+window.scrollY-76,behavior:'smooth'});
  });
 });
 
@@ -58,8 +58,7 @@ window.addEventListener('ga:feedback',e=>{
 /* Перезапуск игры */
 document.querySelectorAll('[data-restart]').forEach(btn=>{
  btn.addEventListener('click',()=>{
-  const game=btn.dataset.restart;
-  window.dispatchEvent(new CustomEvent('ga:restart',{detail:{game}}));
+  window.dispatchEvent(new CustomEvent('ga:restart',{detail:{game:btn.dataset.restart}}));
  });
 });
 
