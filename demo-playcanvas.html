@@ -115,7 +115,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Идите по цепочке островов. У каждого моста — стражник: прочитайте обелиск, найдите письмо-подсказку и пройдите испытание.</p>
+        <p>Идите по цепочке островов. У каждого моста — стражник: прочитайте обелиск и пройдите испытание.</p>
         <div class="quest"><span class="dot gold"></span><span>Испытаний пройдено: <span id="tasksDone">0</span>/9</span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/9</p>
       </div>
@@ -144,7 +144,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок, прочитать письмо, открыть сундук, поговорить со стражником, прочитать обелиск, сорвать яблоко или спуститься в шахту.</p>
-    <p>Руда добывается только в шахте — найдите темный вход с лестницей и спуститесь вниз. На деревьях растут яблоки — кликните, чтобы сорвать.</p>
+    <p>У каждого стражника — 2 задания: 1) прочитай обелиск в центре острова (знания раздела); 2) ответь на вопрос. Письмо-подсказка — необязательно, но помогает.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -182,7 +182,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="finalModal">
   <div class="box">
     <h2>Курс пройден!</h2>
-    <p>Вы прошли все локации, изучили знания через обелиски и письма и выполнили испытания.</p>
+    <p>Вы прошли все локации, изучили знания через обелиски и выполнили испытания.</p>
     <p><b>Заключение:</b> диагностика одаренности — это не единичный акт измерения, а процесс, встроенный в образовательную практику.</p>
     <button id="closeFinal">Продолжить</button>
   </div>
@@ -361,7 +361,6 @@ function cube(x,y,z,m){
   world.addChild(b);
 }
 
-// Ключевые точки (без тропинок)
 LOCS.forEach((l,i)=>{
   const r=locRadius(l.id);
   const a=Math.random()*Math.PI*2;
@@ -372,9 +371,7 @@ LOCS.forEach((l,i)=>{
   const len=Math.sqrt(dx*dx+dz*dz);
   const ux=dx/len,uz=dz/len;
   l.guardPos={x:Math.round(l.cx+ux*(r-3)),z:Math.round(l.cz+uz*(r-3))};
-  // Шахта: вход на острове
   l.minePos={x:l.cx+3,z:l.cz+3};
-  // Места для руды — только под землей (в шахте)
   l.oreSpots=[];
   for(let k=0;k<4;k++){
     const oa=k*Math.PI/2+Math.random()*0.5;
@@ -383,7 +380,6 @@ LOCS.forEach((l,i)=>{
   }
 });
 
-// Строим локации: яркие, без тропинок, с цветами
 for(let x=-45;x<45;x++){
   for(let z=-45;z<45;z++){
     const l=locAt(x,z);
@@ -393,9 +389,8 @@ for(let x=-45;x<45;x++){
       const isTop=(y===top);
       let m;
       if(l.id==='dungeon1'||l.id==='dungeon2'){
-        m=isTop?darkStone:darkStone;
+        m=darkStone;
       }else{
-        // Яркая земля: трава + цветные пятна
         if(isTop){
           const rnd=Math.random();
           if(rnd<0.08)m=flowerMats[Math.floor(Math.random()*flowerMats.length)];
@@ -474,7 +469,6 @@ bridges.forEach(b=>{
   }
 });
 
-// Факелы — случайно по островам (не по тропинкам)
 LOCS.forEach(l=>{
   const r=locRadius(l.id);
   for(let i=0;i<3;i++){
@@ -547,7 +541,6 @@ LOCS.filter(l=>l.id==='dungeon1'||l.id==='dungeon2').forEach(l=>{
   }
 });
 
-// Деревья с яблоками
 const apples=[];
 function voxelTree(x,z,leafM){
   const top=groundTop(x,z);
@@ -559,7 +552,6 @@ function voxelTree(x,z,leafM){
       cube(x+dx,top+dy,z+dz,leafM);
     }
   }
-  // Яблоки на кроне
   for(let i=0;i<2;i++){
     const ax=x+(Math.random()-0.5)*1.6;
     const az=z+(Math.random()-0.5)*1.6;
@@ -589,17 +581,14 @@ LOCS.filter(l=>l.id!=='city'&&l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
   }
 });
 
-// Шахты: вход + подземная комната с рудой
 const mineEntrances=[];
 LOCS.forEach((l,i)=>{
   const mp=l.minePos;
   const top=groundTop(mp.x,mp.z);
   if(top==null)return;
-  // Вход: темная яма 2x2 с лестницей
   for(let dx=0;dx<2;dx++)for(let dz=0;dz<2;dz++){
     cube(mp.x+dx,top,mp.z+dz,darkStone);
   }
-  // Лестница (вертикальная)
   const ladder=new pc.Entity('ladder_'+i);
   for(let dy=0;dy<6;dy++){
     const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder.addChild(step);
@@ -608,18 +597,15 @@ LOCS.forEach((l,i)=>{
   ladder.userData={mine:true,loc:i,alive:true};
   world.addChild(ladder);
   mineEntrances.push(ladder);
-  // Подземная комната: пол 5x5 на MINE_Y
   for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
     cube(mp.x+dx,MINE_Y,mp.z+dz,darkStone);
   }
-  // Стены комнаты
   for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++){
     if(Math.abs(dx)===2||Math.abs(dz)===2){
       cube(mp.x+dx,MINE_Y+1,mp.z+dz,darkStone);
       cube(mp.x+dx,MINE_Y+2,mp.z+dz,darkStone);
     }
   }
-  // Лестница внизу (для возврата)
   const ladder2=new pc.Entity('ladder2_'+i);
   for(let dy=0;dy<6;dy++){
     const step=new pc.Entity();step.addComponent('render',{type:'box',material:woodMat});step.setLocalPosition(0,dy*0.5,0);step.setLocalScale(0.3,0.1,0.3);ladder2.addChild(step);
@@ -628,7 +614,6 @@ LOCS.forEach((l,i)=>{
   ladder2.userData={mine:true,loc:i,alive:true,underground:true};
   world.addChild(ladder2);
   mineEntrances.push(ladder2);
-  // Факел в шахте
   const torch=new pc.Entity('minetorch_'+i);
   const post=new pc.Entity();post.addComponent('render',{type:'box',material:darkStone});post.setLocalPosition(0,0.75,0);post.setLocalScale(0.15,1.5,0.15);torch.addChild(post);
   const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:lampMat});lamp.setLocalPosition(0,1.6,0);lamp.setLocalScale(0.35,0.35,0.35);torch.addChild(lamp);
@@ -637,7 +622,6 @@ LOCS.forEach((l,i)=>{
   world.addChild(torch);
 });
 
-// Кусты, лампы, ящики, камни
 LOCS.filter(l=>l.id!=='dungeon1'&&l.id!=='dungeon2').forEach(l=>{
   const r=locRadius(l.id);
   for(let i=0;i<5;i++){
@@ -816,7 +800,6 @@ const inventory={gold:0,blue:0,purple:0,green:0,red:0};
 const collectedLetters=[];
 let selectedLetter=null;
 
-// Руда — только в шахте (под землей)
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
   const e=new pc.Entity('ore_'+typeKey+'_'+Math.random().toString(36).slice(2));
@@ -857,7 +840,7 @@ function tasksDoneCount(){
   let n=0;for(let i=1;i<=9;i++)if(tasks['t'+i])n++;return n;
 }
 
-const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: прочитай обелиск, найди письмо-подсказку и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
+const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: прочитай обелиск и пройди испытание.',done:()=>tasks['t'+(i+1)]}));
 function renderQuests(){
   const ul=document.getElementById('questList');
   ul.innerHTML='';
@@ -1034,12 +1017,6 @@ function mineAt(cx,cy){
     document.getElementById('letterModal').classList.add('show');
     lettersRead++;
     if(!collectedLetters.includes(best.userData.loc))collectedLetters.push(best.userData.loc);
-    guards.forEach(g=>{
-      if(g.userData.stage===1&&g.userData.loc===best.userData.loc){
-        g.userData.stage=2;
-        toast('Стражник: ты готов! Поговори со мной.');
-      }
-    });
     updateHUD();
     return;
   }
@@ -1051,22 +1028,19 @@ function mineAt(cx,cy){
     guards.forEach(g=>{
       if(g.userData.stage===0&&g.userData.loc===best.userData.loc){
         g.userData.stage=1;
-        toast('Стражник: теперь найди письмо-подсказку.');
+        toast('Стражник: ты готов! Поговори со мной.');
       }
     });
     updateHUD();
     return;
   }
   if(best.userData.mine){
-    // Телепорт в шахту / наверх
     const l=LOCS[best.userData.loc];
     const p=player.getLocalPosition();
     if(best.userData.underground){
-      // Наверх
       player.setLocalPosition(l.minePos.x,groundTop(l.minePos.x,l.minePos.z)+0.5,l.minePos.z);
       toast('Вы поднялись на поверхность.');
     }else{
-      // Вниз в шахту
       player.setLocalPosition(l.minePos.x,MINE_Y+0.5,l.minePos.z);
       toast('Вы спустились в шахту. Здесь добывается руда.');
     }
@@ -1129,13 +1103,7 @@ function interactGuard(g){
   const u=g.userData;
   if(u.stage===0){
     document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 1: подойди к обелиску в центре острова и нажми на него (клик) или E, чтобы прочитать знания раздела. Потом возвращайся ко мне.';
-    document.getElementById('quizQ').textContent='';
-    document.getElementById('quizOpts').innerHTML='';
-    document.getElementById('npcModal').classList.add('show');
-  }else if(u.stage===1){
-    document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 2: найди письмо-подсказку на острове и прочитай его (клик или E).';
+    document.getElementById('npcText').textContent='Задание: подойди к обелиску в центре острова и нажми на него (клик) или E, чтобы прочитать знания раздела. Потом возвращайся ко мне.';
     document.getElementById('quizQ').textContent='';
     document.getElementById('quizOpts').innerHTML='';
     document.getElementById('npcModal').classList.add('show');
@@ -1148,7 +1116,7 @@ function openQuiz(guard){
   const l=LOCS[guard.userData.loc];
   const q=l.npc.quiz;
   document.getElementById('npcName').textContent=l.npc.name;
-  document.getElementById('npcText').textContent='Ты изучил знания через обелиск и письмо. Теперь ответь на вопрос — и я пропущу тебя.';
+  document.getElementById('npcText').textContent='Ты изучил знания через обелиск. Теперь ответь на вопрос — и я пропущу тебя.';
   document.getElementById('quizQ').textContent=q.q;
   const opts=document.getElementById('quizOpts');
   opts.innerHTML='';
@@ -1217,11 +1185,10 @@ function interact(){
     guards.forEach(g=>{
       if(g.userData.stage===0&&g.userData.loc===near.userData.loc){
         g.userData.stage=1;
-        toast('Стражник: теперь найди письмо-подсказку.');
+        toast('Стражник: ты готов! Поговори со мной.');
       }
     });
   }else if(near.userData.mine){
-    // Телепорт в шахту / наверх
     const l=LOCS[near.userData.loc];
     const p=player.getLocalPosition();
     if(near.userData.underground){
@@ -1374,7 +1341,6 @@ app.on('update',dt=>{
     forward.z*(keys.up-keys.down)+right.z*(keys.right-keys.left)
   );
   const p=player.getLocalPosition();
-  // Если игрок в шахте — пол на MINE_Y
   const inMine=p.y<MINE_Y+2;
   const curTop=inMine?MINE_Y:(groundTop(p.x,p.z)??BASE);
   if(move.length()>0){
@@ -1383,7 +1349,6 @@ app.on('update',dt=>{
     const nx=p.x+move.x*speed*dt;
     const nz=p.z+move.z*speed*dt;
     if(inMine){
-      // В шахте — ограничение комнатой 5x5
       const l=LOCS.find(l=>Math.abs(p.x-l.minePos.x)<3&&Math.abs(p.z-l.minePos.z)<3);
       if(l){
         const dx=nx-l.minePos.x,dz=nz-l.minePos.z;
