@@ -177,6 +177,39 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   </div>
   <div class="toast" id="toast"></div>
 </div>
+<div class="modal show" id="startScreen">
+  <div class="box">
+    <h2>Академия знаний</h2>
+    <p>Психолого-педагогическая диагностика одаренности</p>
+    <p>Сначала изучите материал (12 разделов), затем пройдите тест — и только после этого откроется 3D-игра с мини-играми.</p>
+    <button id="openTheory">📚 Изучить материал</button>
+    <button id="startGameBtn">🎮 Начать игру</button>
+    <p id="gameLockHint" style="color:#ff8a80;font-size:.85rem;margin-top:.4rem"></p>
+  </div>
+</div>
+<div class="modal" id="theoryModal">
+  <div class="box">
+    <h2 id="theoryTitle"></h2>
+    <p id="theoryText"></p>
+    <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.6rem;flex-wrap:wrap">
+      <button id="theoryPrev">← Назад</button>
+      <button id="theoryNext">Далее →</button>
+    </div>
+    <p id="theoryProgress" style="font-size:.8rem;color:#ccc;margin-top:.4rem"></p>
+    <button id="openTest" style="display:none">✅ Пройти тест</button>
+    <button id="closeTheory">Закрыть</button>
+  </div>
+</div>
+<div class="modal" id="testModal">
+  <div class="box">
+    <h2>Тест по материалу</h2>
+    <p id="testProgress"></p>
+    <p id="testQuestion"></p>
+    <div class="quizOpts" id="testOpts"></div>
+    <p id="testResult" style="display:none"></p>
+    <button id="closeTest" style="display:none">Закрыть</button>
+  </div>
+</div>
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
@@ -1723,10 +1756,98 @@ document.getElementById('closeLetter').addEventListener('click',()=>{
 document.getElementById('closeFinal').addEventListener('click',()=>{
   document.getElementById('finalModal').classList.remove('show');
 });
-document.getElementById('tutorialModal').classList.add('show');
+
+let theoryPassed=localStorage.getItem('theoryPassed')==='1';
+let theoryIdx=0;
+function updateStartScreen(){
+  const btn=document.getElementById('startGameBtn');
+  const hint=document.getElementById('gameLockHint');
+  if(theoryPassed){
+    btn.disabled=false;
+    btn.style.opacity='1';
+    hint.textContent='✅ Материал пройден — игра открыта!';
+  }else{
+    btn.disabled=true;
+    btn.style.opacity='0.5';
+    hint.textContent='🔒 Сначала изучите материал и пройдите тест (нужно 9 из 12).';
+  }
+}
+function showTheory(){
+  const l=LOCS[theoryIdx];
+  document.getElementById('theoryTitle').textContent='Раздел '+(theoryIdx+1)+': '+l.name.replace('Остров ','');
+  document.getElementById('theoryText').textContent=l.letter;
+  document.getElementById('theoryProgress').textContent='Раздел '+(theoryIdx+1)+' из 12';
+  document.getElementById('theoryPrev').disabled=theoryIdx===0;
+  document.getElementById('theoryNext').textContent=theoryIdx<LOCS.length-1?'Далее →':'К тесту →';
+  document.getElementById('openTest').style.display=theoryIdx===LOCS.length-1?'block':'none';
+  document.getElementById('theoryModal').classList.add('show');
+}
+document.getElementById('openTheory').addEventListener('click',()=>{
+  theoryIdx=0;showTheory();
+});
+document.getElementById('theoryPrev').addEventListener('click',()=>{if(theoryIdx>0){theoryIdx--;showTheory();}});
+document.getElementById('theoryNext').addEventListener('click',()=>{
+  if(theoryIdx<LOCS.length-1){theoryIdx++;showTheory();}
+});
+document.getElementById('closeTheory').addEventListener('click',()=>{
+  document.getElementById('theoryModal').classList.remove('show');
+});
+let testIdx=0,testScore=0;
+function showTest(){
+  const q=LOCS[testIdx].npc.quiz;
+  document.getElementById('testProgress').textContent='Вопрос '+(testIdx+1)+' из 12';
+  document.getElementById('testQuestion').textContent=q.q;
+  const opts=document.getElementById('testOpts');
+  opts.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.textContent=o;
+    btn.addEventListener('click',()=>{
+      if(i===q.correct)testScore++;
+      testIdx++;
+      if(testIdx<12)showTest();
+      else finishTest();
+    });
+    opts.appendChild(btn);
+  });
+}
+function finishTest(){
+  document.getElementById('testProgress').textContent='';
+  document.getElementById('testQuestion').textContent='';
+  document.getElementById('testOpts').innerHTML='';
+  const res=document.getElementById('testResult');
+  res.style.display='block';
+  if(testScore>=9){
+    theoryPassed=true;
+    localStorage.setItem('theoryPassed','1');
+    res.textContent='✅ Тест пройден: '+testScore+' из 12. Игра открыта!';
+    updateStartScreen();
+  }else{
+    res.textContent='❌ Тест не пройден: '+testScore+' из 12. Нужно минимум 9. Изучите материал еще раз.';
+  }
+  document.getElementById('closeTest').style.display='block';
+}
+document.getElementById('openTest').addEventListener('click',()=>{
+  testIdx=0;testScore=0;
+  document.getElementById('testResult').style.display='none';
+  document.getElementById('closeTest').style.display='none';
+  document.getElementById('theoryModal').classList.remove('show');
+  showTest();
+  document.getElementById('testModal').classList.add('show');
+});
+document.getElementById('closeTest').addEventListener('click',()=>{
+  document.getElementById('testModal').classList.remove('show');
+  document.getElementById('startScreen').classList.add('show');
+});
+document.getElementById('startGameBtn').addEventListener('click',()=>{
+  if(!theoryPassed){toast('Сначала пройдите материал и тест!');return;}
+  document.getElementById('startScreen').classList.remove('show');
+  document.getElementById('tutorialModal').classList.add('show');
+});
 document.getElementById('startGame').addEventListener('click',()=>{
   document.getElementById('tutorialModal').classList.remove('show');
 });
+updateStartScreen();
 
 let t=0;
 let dayTime=0;
