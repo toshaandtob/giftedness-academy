@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Демо: Академия знаний — Minecraft-стиль на PlayCanvas</title>
+<title>Академия знаний — Игра</title>
 <style>
 :root{--gold:#d9a441;--green:#6f9a5d;--blue:#8fc4d6;--ink:#3b2d20;--danger:#b3573f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -34,19 +34,23 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .dot.green{background:#6f9a5d;color:#6f9a5d}
 .dot.red{background:#b3573f;color:#b3573f}
 .score{font:700 1.1rem/1 'Marcellus',serif;color:#ffe9a8}
-.back{position:absolute;right:12px;top:12px;pointer-events:auto}
-.back a{display:inline-block;padding:.5rem .9rem;border-radius:999px;text-decoration:none;color:#3f2c16;background:linear-gradient(135deg,#f7dd93,#d9a441);border:2px solid rgba(107,74,47,.4);font-family:'Marcellus',serif;font-weight:700}
 .toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:rgba(20,20,20,.7);color:#fff;padding:.5rem .9rem;border-radius:10px;border:1px solid rgba(255,255,255,.3);opacity:0;transition:opacity .3s;font-family:'Marcellus',serif}
 .toast.show{opacity:1}
 .flash{position:fixed;inset:0;background:rgba(179,87,63,.35);opacity:0;pointer-events:none;transition:opacity .25s;z-index:9}
 .flash.show{opacity:1}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.7);z-index:30}
+.modal.show{display:grid}
+.modal .box{background:rgba(20,20,20,.9);border:2px solid rgba(255,255,255,.3);border-radius:16px;padding:1.5rem 2rem;max-width:520px;color:#fff;text-align:center}
+.modal h2{font:700 1.4rem/1.2 'Marcellus',serif;color:#ffe9a8;margin:0 0 .6rem}
+.modal p{margin:.4rem 0;line-height:1.5}
+.modal button{margin-top:.8rem;padding:.6rem 1.2rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
 .gameover{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.75);z-index:20}
 .gameover.show{display:grid}
 .gameover .box{background:rgba(20,20,20,.85);border:2px solid rgba(255,255,255,.3);border-radius:16px;padding:1.5rem 2rem;text-align:center;color:#fff}
 .gameover h2{font:700 1.6rem/1.2 'Marcellus',serif;color:#ff8a80;margin:0 0 .6rem}
 .gameover p{margin:.3rem 0}
 .gameover button{margin-top:.8rem;padding:.7rem 1.3rem;border-radius:999px;border:2px solid rgba(107,74,47,.4);background:linear-gradient(135deg,#f7dd93,#d9a441);color:#3f2c16;font-family:'Marcellus',serif;font-weight:700;cursor:pointer}
-@media(max-width:520px){.slot{width:48px;height:48px}.slot .icon{width:28px;height:28px;font-size:16px}.panel{max-width:260px;font-size:.9rem}.hearts{bottom:84px;font-size:18px}}
+@media(max-width:520px){.slot{width:48px;height:48px}.slot .icon{width:28px;height:28px;font-size:16px}.panel{max-width:260px;font-size:.9rem}.hearts{bottom:84px;font-size:18px}.modal .box{padding:1rem;max-width:90vw}}
 </style>
 </head>
 <body>
@@ -55,12 +59,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="hud">
   <div class="topbar">
     <div class="panel">
-      <h1>Академия знаний — добыча ресурсов</h1>
-      <p>Добывайте блок нужного типа. За правильный блок — еда. За неправильный — теряете сердце.</p>
+      <h1>Академия знаний — Острова</h1>
+      <p>Исследуйте острова, добывайте нужные блоки и читайте письма. Каждое письмо — часть истории.</p>
       <div class="quest"><span class="dot" id="questDot"></span><span id="questText">Добудь: золото</span></div>
-      <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span></p>
+      <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/4</p>
     </div>
-    <div class="back"><a href="index.html">← На карту</a></div>
   </div>
   <div class="crosshair"></div>
   <div class="hearts" id="hearts"></div>
@@ -69,6 +72,21 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <div class="slot" data-slot="food" id="foodSlot"><div class="icon food">🍎</div><span class="count" id="foodSlotCount">0</span></div>
   </div>
   <div class="toast" id="toast"></div>
+</div>
+<div class="modal" id="letterModal">
+  <div class="box">
+    <h2 id="letterTitle"></h2>
+    <p id="letterText"></p>
+    <button id="closeLetter">Закрыть</button>
+  </div>
+</div>
+<div class="modal" id="finalModal">
+  <div class="box">
+    <h2>Путь пройден!</h2>
+    <p>Вы прочитали все письма и собрали знания с четырёх островов.</p>
+    <p>Ваш дар — расти, когда вы действуете, учитесь и поддерживаете других.</p>
+    <button id="closeFinal">Продолжить</button>
+  </div>
 </div>
 <div class="gameover" id="gameover">
   <div class="box">
@@ -92,11 +110,11 @@ app.start();
 
 const scene=app.scene;
 scene.ambientLight=new pc.Color(0.4,0.4,0.45);
-scene.fogColor=new pc.Color(0.6,0.68,0.78);
-scene.fogStart=50;scene.fogEnd=160;
+scene.fogColor=new pc.Color(0.55,0.65,0.75);
+scene.fogStart=25;scene.fogEnd=110;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:400,clearColor:new pc.Color(0.6,0.68,0.78)});
+camera.addComponent('camera',{fov:60,near:0.1,far:400,clearColor:new pc.Color(0.55,0.65,0.75)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
@@ -112,44 +130,60 @@ function mat(color,emissive){
 }
 const grassMat=mat([0.42,0.62,0.35]);
 const dirtMat=mat([0.45,0.32,0.2]);
-const pathMat=mat([0.5,0.38,0.24]);
 const waterMat=mat([0.3,0.55,0.7]);
 const stoneMat=mat([0.5,0.5,0.52]);
 const snowMat=mat([0.95,0.95,0.98]);
 const trunkMat=mat([0.4,0.28,0.18]);
+const birchMat=mat([0.9,0.9,0.85]);
 const leafMat=mat([0.3,0.55,0.3]);
+const leafLight=mat([0.5,0.7,0.4]);
+const leafDark=mat([0.2,0.4,0.25]);
 const bushMat=mat([0.35,0.6,0.35]);
 const tuftMat=mat([0.35,0.6,0.3]);
 const flowerRed=mat([0.85,0.3,0.3]);
 const flowerYellow=mat([0.95,0.85,0.3]);
 const flowerWhite=mat([0.95,0.95,0.95]);
+const cloudMat=mat([0.95,0.95,0.98]);
+const woolMat=mat([0.9,0.9,0.9]);
+const cowMat=mat([0.5,0.3,0.2]);
+const blackMat=mat([0.15,0.15,0.15]);
 const goldMat=mat([0.85,0.65,0.25],[0.5,0.35,0.1]);
 const blueMat=mat([0.4,0.7,0.8],[0.1,0.35,0.45]);
 const purpleMat=mat([0.6,0.45,0.85],[0.25,0.15,0.45]);
 const greenMat=mat([0.45,0.7,0.4],[0.15,0.35,0.1]);
 const redMat=mat([0.75,0.3,0.25],[0.35,0.1,0.05]);
+const letterMat=mat([0.9,0.8,0.4],[0.6,0.5,0.2]);
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
 
-// Большая воксельная карта 40x40
-const SIZE=40;
-const HALF=SIZE/2;
-function isPath(x,z){return z===0||z===1;}
-function isLake(x,z){const dx=x+12,dz=z-12;return dx*dx+dz*dz<=16;}
+// Океан
+const ocean=new pc.Entity('ocean');
+ocean.addComponent('render',{type:'plane',material:waterMat});
+ocean.setLocalPosition(0,-0.5,0);
+ocean.setLocalScale(160,1,160);
+ocean.setEulerAngles(-90,0,0);
+world.addChild(ocean);
+
+// Острова
+const islands=[
+  {cx:-15,cz:-15,name:'Остров Начал',letter:'Ты прибыл на остров, где каждый находит свой первый дар. Осмотрись: твои сильные стороны уже рядом. Добывай нужные блоки, чтобы собрать силы для пути.'},
+  {cx:15,cz:-15,name:'Остров Испытаний',letter:'Здесь встречаются трудности. Не каждый блок будет верным, но каждая ошибка учит. Собирай еду, восстанавливай сердца и двигайся дальше.'},
+  {cx:-15,cz:15,name:'Остров Знаний',letter:'На этом острове живут те, кто делится опытом. Читай письма, учись у других и помни: талант раскрывается в деле и в общении.'},
+  {cx:15,cz:15,name:'Остров Возвращения',letter:'Ты почти у цели. Поделись тем, чему научился, поддержи других — и твой дар станет сильнее. Вернись домой с новыми силами.'}
+];
+const R=9;
+function inIsland(x,z){
+  return islands.some(i=>{const dx=x-i.cx,dz=z-i.cz;return dx*dx+dz*dz<=R*R;});
+}
 function baseHeight(x,z){
-  const n=Math.sin(x*0.25)+Math.cos(z*0.22)+Math.sin((x+z)*0.15);
+  const n=Math.sin(x*0.3)+Math.cos(z*0.28)+Math.sin((x+z)*0.18);
   let h=1+Math.round((n+3)/3);
   return Math.max(1,Math.min(3,h));
 }
-function terrainInfo(x,z){
-  if(isLake(x,z))return{h:0,top:'water'};
-  if(isPath(x,z))return{h:1,top:'path'};
-  return{h:baseHeight(x,z),top:'grass'};
-}
 function getHeight(x,z){
-  const info=terrainInfo(Math.round(x),Math.round(z));
-  return info.h;
+  if(!inIsland(Math.round(x),Math.round(z)))return 0;
+  return baseHeight(Math.round(x),Math.round(z));
 }
 function cube(x,y,z,m){
   const b=new pc.Entity();
@@ -158,16 +192,15 @@ function cube(x,y,z,m){
   world.addChild(b);
 }
 
-// Строим рельеф
-for(let x=-HALF;x<HALF;x++){
-  for(let z=-HALF;z<HALF;z++){
-    const info=terrainInfo(x,z);
-    if(info.h===0){cube(x,0,z,waterMat);continue;}
-    for(let y=0;y<info.h;y++){
-      const isTop=(y===info.h-1);
-      const m=isTop?(info.top==='path'?pathMat:grassMat):dirtMat;
-      cube(x,y,z,m);
-      if(isTop&&info.top==='grass'){
+// Строим острова
+for(let x=-30;x<30;x++){
+  for(let z=-30;z<30;z++){
+    if(!inIsland(x,z))continue;
+    const h=baseHeight(x,z);
+    for(let y=0;y<h;y++){
+      const isTop=(y===h-1);
+      cube(x,y,z,isTop?grassMat:dirtMat);
+      if(isTop){
         if(Math.random()<0.3){
           const t=new pc.Entity();
           t.addComponent('render',{type:'box',material:tuftMat});
@@ -188,53 +221,56 @@ for(let x=-HALF;x<HALF;x++){
   }
 }
 
-// Воксельные горы (ступенчатые пирамиды из кубов)
-function voxelMountain(cx,cz,baseR,maxH){
-  for(let dx=-baseR;dx<=baseR;dx++){
-    for(let dz=-baseR;dz<=baseR;dz++){
-      const d=Math.max(Math.abs(dx),Math.abs(dz));
-      const h=maxH-d;
-      if(h<=0)continue;
-      for(let y=0;y<h;y++){
-        const isTop=(y===h-1);
-        const m=(isTop&&h>=maxH-1)?snowMat:stoneMat;
-        cube(cx+dx,y,cz+dz,m);
-      }
-    }
-  }
-}
-voxelMountain(-26,-26,4,7);
-voxelMountain(26,-26,4,6);
-voxelMountain(-26,26,4,6);
-voxelMountain(26,26,4,7);
-
-// Воксельные деревья (ствол и крона из кубов)
-function voxelTree(x,z){
+// Воксельные деревья: дуб, берёза, ель
+function treeOak(x,z){
   const y=getHeight(x,z);
   for(let i=0;i<3;i++)cube(x,y+i,z,trunkMat);
   for(let dy=3;dy<=4;dy++){
-    for(let dx=-1;dx<=1;dx++){
-      for(let dz=-1;dz<=1;dz++){
-        if(dy===4&&Math.abs(dx)===1&&Math.abs(dz)===1)continue;
-        cube(x+dx,y+dy,z+dz,leafMat);
-      }
+    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+      if(dy===4&&Math.abs(dx)===1&&Math.abs(dz)===1)continue;
+      cube(x+dx,y+dy,z+dz,leafMat);
     }
   }
 }
+function treeBirch(x,z){
+  const y=getHeight(x,z);
+  for(let i=0;i<4;i++)cube(x,y+i,z,birchMat);
+  for(let dy=4;dy<=5;dy++){
+    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+      if(dy===5&&Math.abs(dx)===1&&Math.abs(dz)===1)continue;
+      cube(x+dx,y+dy,z+dz,leafLight);
+    }
+  }
+}
+function treePine(x,z){
+  const y=getHeight(x,z);
+  for(let i=0;i<4;i++)cube(x,y+i,z,trunkMat);
+  cube(x,y+4,z,leafDark);
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    if(!(dx===0&&dz===0))cube(x+dx,y+3,z+dz,leafDark);
+  }
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    cube(x+dx,y+2,z+dz,leafDark);
+  }
+}
+const treeTypes=[treeOak,treeBirch,treePine];
 for(let i=0;i<40;i++){
-  const x=Math.floor((Math.random()-0.5)*SIZE);
-  const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
-  if(isPath(x,z)||isLake(x,z))continue;
-  voxelTree(x,z);
+  const isl=islands[i%islands.length];
+  const a=Math.random()*Math.PI*2;
+  const r=3+Math.random()*(R-3);
+  const x=Math.round(isl.cx+Math.cos(a)*r);
+  const z=Math.round(isl.cz+Math.sin(a)*r);
+  if(Math.abs(x-isl.cx)<2&&Math.abs(z-isl.cz)<2)continue;
+  treeTypes[Math.floor(Math.random()*3)](x,z);
 }
 
-// Кусты
-for(let i=0;i<30;i++){
-  const x=Math.floor((Math.random()-0.5)*SIZE);
-  const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
-  if(isPath(x,z)||isLake(x,z))continue;
+// Кусты и камни
+for(let i=0;i<24;i++){
+  const isl=islands[i%islands.length];
+  const a=Math.random()*Math.PI*2;
+  const r=2+Math.random()*(R-2);
+  const x=Math.round(isl.cx+Math.cos(a)*r);
+  const z=Math.round(isl.cz+Math.sin(a)*r);
   const y=getHeight(x,z);
   const b=new pc.Entity('bush');
   b.addComponent('render',{type:'box',material:bushMat});
@@ -242,13 +278,12 @@ for(let i=0;i<30;i++){
   b.setLocalScale(0.8,0.6,0.8);
   world.addChild(b);
 }
-
-// Камни
-for(let i=0;i<20;i++){
-  const x=Math.floor((Math.random()-0.5)*SIZE);
-  const z=Math.floor((Math.random()-0.5)*SIZE);
-  if(Math.abs(x)<8&&Math.abs(z)<8)continue;
-  if(isPath(x,z)||isLake(x,z))continue;
+for(let i=0;i<16;i++){
+  const isl=islands[i%islands.length];
+  const a=Math.random()*Math.PI*2;
+  const r=2+Math.random()*(R-2);
+  const x=Math.round(isl.cx+Math.cos(a)*r);
+  const z=Math.round(isl.cz+Math.sin(a)*r);
   const y=getHeight(x,z);
   const rock=new pc.Entity('rock');
   rock.addComponent('render',{type:'box',material:stoneMat});
@@ -258,16 +293,58 @@ for(let i=0;i<20;i++){
   world.addChild(rock);
 }
 
-// Факелы
-const torchPositions=[[-8,-8],[8,-8],[-8,8],[8,8]];
-const torchCount=window.matchMedia('(max-width:760px)').matches?2:4;
-torchPositions.slice(0,torchCount).forEach(p=>{
-  const y=getHeight(p[0],p[1]);
-  const g=new pc.Entity('torch');
-  const post=new pc.Entity();post.addComponent('render',{type:'box',material:trunkMat});post.setLocalPosition(0,1,0);post.setLocalScale(0.15,2,0.15);g.addChild(post);
-  const lamp=new pc.Entity();lamp.addComponent('render',{type:'box',material:mat([1,0.9,0.6],[1,0.8,0.4])});lamp.setLocalPosition(0,2.2,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
-  const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:12});pl.setLocalPosition(0,2.2,0);g.addChild(pl);
-  g.setLocalPosition(p[0],y,p[1]);world.addChild(g);
+// Животные: овцы и коровы
+const animals=[];
+function makeSheep(isl){
+  const g=new pc.Entity('sheep');
+  const body=new pc.Entity();body.addComponent('render',{type:'box',material:woolMat});body.setLocalPosition(0,0.5,0);body.setLocalScale(0.9,0.6,1.2);g.addChild(body);
+  const head=new pc.Entity();head.addComponent('render',{type:'box',material:blackMat});head.setLocalPosition(0,0.7,0.8);head.setLocalScale(0.4,0.4,0.4);g.addChild(head);
+  for(let i=0;i<4;i++){
+    const leg=new pc.Entity();leg.addComponent('render',{type:'box',material:blackMat});leg.setLocalPosition((i%2?0.25:-0.25),0.15,(i<2?0.35:-0.35));leg.setLocalScale(0.15,0.3,0.15);g.addChild(leg);
+  }
+  const a=Math.random()*Math.PI*2;
+  g.setLocalPosition(isl.cx+Math.cos(a)*4,getHeight(isl.cx+Math.cos(a)*4,isl.cz+Math.sin(a)*4),isl.cz+Math.sin(a)*4);
+  world.addChild(g);
+  animals.push({e:g,isl,angle:a,radius:4,speed:0.3+Math.random()*0.3,type:'sheep'});
+}
+function makeCow(isl){
+  const g=new pc.Entity('cow');
+  const body=new pc.Entity();body.addComponent('render',{type:'box',material:cowMat});body.setLocalPosition(0,0.6,0);body.setLocalScale(1,0.7,1.4);g.addChild(body);
+  const head=new pc.Entity();head.addComponent('render',{type:'box',material:cowMat});head.setLocalPosition(0,0.9,0.9);head.setLocalScale(0.45,0.45,0.45);g.addChild(head);
+  for(let i=0;i<4;i++){
+    const leg=new pc.Entity();leg.addComponent('render',{type:'box',material:blackMat});leg.setLocalPosition((i%2?0.3:-0.3),0.15,(i<2?0.45:-0.45));leg.setLocalScale(0.18,0.3,0.18);g.addChild(leg);
+  }
+  const a=Math.random()*Math.PI*2;
+  g.setLocalPosition(isl.cx+Math.cos(a)*5,getHeight(isl.cx+Math.cos(a)*5,isl.cz+Math.sin(a)*5),isl.cz+Math.sin(a)*5);
+  world.addChild(g);
+  animals.push({e:g,isl,angle:a,radius:5,speed:0.2+Math.random()*0.2,type:'cow'});
+}
+islands.forEach((isl,i)=>{
+  if(i%2===0){makeSheep(isl);makeCow(isl);}else{makeSheep(isl);}
+});
+
+// Облака
+const clouds=[];
+for(let i=0;i<8;i++){
+  const c=new pc.Entity('cloud');
+  c.addComponent('render',{type:'box',material:cloudMat});
+  c.setLocalPosition((Math.random()-0.5)*80,14+Math.random()*5,(Math.random()-0.5)*80);
+  c.setLocalScale(5+Math.random()*4,0.5,2+Math.random()*2);
+  world.addChild(c);
+  clouds.push({e:c,speed:0.4+Math.random()*0.6});
+}
+
+// Письма на островах
+const letterBlocks=[];
+islands.forEach((isl,i)=>{
+  const y=getHeight(isl.cx,isl.cz);
+  const e=new pc.Entity('letter_'+i);
+  e.addComponent('render',{type:'box',material:letterMat});
+  e.setLocalPosition(isl.cx,y,isl.cz);
+  e.setLocalScale(0.8,0.8,0.8);
+  e.userData={letter:true,island:i,alive:true};
+  world.addChild(e);
+  letterBlocks.push(e);
 });
 
 // Типы блоков
@@ -281,19 +358,23 @@ const types=[
 const questTypes=['gold','blue','purple','green'];
 
 let questType='gold';
-let hearts=3,maxHearts=5,food=0,score=0,gameOver=false;
+let hearts=3,maxHearts=5,food=0,score=0,gameOver=false,lettersRead=0;
 const ores=[];
 
-function randPos(){
-  const x=Math.floor((Math.random()-0.5)*24);
-  const z=Math.floor((Math.random()-0.5)*24);
+function randPosOnIsland(isl){
+  const a=Math.random()*Math.PI*2;
+  const r=2+Math.random()*(R-3);
+  const x=Math.round(isl.cx+Math.cos(a)*r);
+  const z=Math.round(isl.cz+Math.sin(a)*r);
   return [x,getHeight(x,z),z];
 }
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
   const e=new pc.Entity('ore_'+typeKey+'_'+Math.random().toString(36).slice(2));
   e.addComponent('render',{type:'box',material:t.mat});
-  const p=randPos();e.setLocalPosition(p[0],p[1],p[2]);
+  const isl=islands[Math.floor(Math.random()*islands.length)];
+  const p=randPosOnIsland(isl);
+  e.setLocalPosition(p[0],p[1],p[2]);
   e.setLocalScale(0.9,0.9,0.9);
   e.userData={type:typeKey,alive:true};
   world.addChild(e);ores.push(e);
@@ -328,6 +409,7 @@ function updateHUD(){
   document.getElementById('score').textContent=score;
   document.getElementById('foodCount').textContent=food;
   document.getElementById('foodSlotCount').textContent=food;
+  document.getElementById('lettersCount').textContent=lettersRead;
   renderHearts();
 }
 updateHUD();
@@ -343,7 +425,7 @@ function flash(){
 }
 
 // Камера
-let yaw=0,pitch=0.5,dist=26;
+let yaw=0,pitch=0.5,dist=30;
 const target=new pc.Vec3(0,2,0);
 function updateCamera(){
   const x=target.x+dist*Math.sin(yaw)*Math.cos(pitch);
@@ -379,7 +461,7 @@ function mineAt(cx,cy){
   const fov=60*Math.PI/180,tanF=Math.tan(fov/2),aspect=window.innerWidth/window.innerHeight;
   const dir=forward.clone().add(right.clone().scale(ndcX*tanF*aspect)).add(up.clone().scale(ndcY*tanF)).normalize();
   let best=null,bestT=Infinity;
-  ores.forEach(o=>{
+  const check=(o)=>{
     if(!o.userData.alive)return;
     const p=o.getLocalPosition().clone();
     const toObj=p.clone().sub(camPos);
@@ -387,9 +469,25 @@ function mineAt(cx,cy){
     if(t<0)return;
     const closest=camPos.clone().add(dir.clone().scale(t));
     const d=closest.distance(p);
-    if(d<0.75&&t<bestT){best=o;bestT=t;}
-  });
-  if(!best){toast('Мимо. Ищите светящиеся блоки.');return;}
+    if(d<0.8&&t<bestT){best=o;bestT=t;}
+  };
+  ores.forEach(check);
+  letterBlocks.forEach(check);
+  if(!best){toast('Мимо. Ищите светящиеся блоки и письма.');return;}
+  if(best.userData.letter){
+    best.userData.alive=false;
+    world.removeChild(best);
+    const isl=islands[best.userData.island];
+    document.getElementById('letterTitle').textContent=isl.name;
+    document.getElementById('letterText').textContent=isl.letter;
+    document.getElementById('letterModal').classList.add('show');
+    lettersRead++;
+    updateHUD();
+    if(lettersRead===4){
+      setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
+    }
+    return;
+  }
   const type=best.userData.type;
   best.userData.alive=false;
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
@@ -411,6 +509,13 @@ function mineAt(cx,cy){
   }
 }
 
+document.getElementById('closeLetter').addEventListener('click',()=>{
+  document.getElementById('letterModal').classList.remove('show');
+  setQuest();
+});
+document.getElementById('closeFinal').addEventListener('click',()=>{
+  document.getElementById('finalModal').classList.remove('show');
+});
 document.getElementById('foodSlot').addEventListener('click',()=>{
   if(gameOver)return;
   if(food>0&&hearts<maxHearts){food--;hearts++;toast('Вы отхилились на 1 сердце.');}
@@ -420,10 +525,11 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 });
 
 document.getElementById('restart').addEventListener('click',()=>{
-  hearts=3;food=0;score=0;gameOver=false;
+  hearts=3;food=0;score=0;gameOver=false;lettersRead=0;
   document.getElementById('gameover').classList.remove('show');
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
+  letterBlocks.forEach(l=>{if(!l.userData.alive){l.userData.alive=true;world.addChild(l);}});
   spawnInitial();setQuest();updateHUD();
   toast('Игра начата заново.');
 });
@@ -434,6 +540,24 @@ window.addEventListener('pointerup',onUp);
 canvas.addEventListener('touchstart',e=>{const t=e.touches[0];onDown(t);},{passive:true});
 window.addEventListener('touchmove',e=>{const t=e.touches[0];onMove(t);},{passive:true});
 window.addEventListener('touchend',e=>{onUp(e.changedTouches[0]);},{passive:true});
+
+// Анимация животных и облаков
+app.on('update',dt=>{
+  animals.forEach(a=>{
+    a.angle+=a.speed*dt;
+    const x=a.isl.cx+Math.cos(a.angle)*a.radius;
+    const z=a.isl.cz+Math.sin(a.angle)*a.radius;
+    const y=getHeight(x,z);
+    a.e.setLocalPosition(x,y,z);
+    a.e.setLocalEulerAngles(0,-a.angle*180/Math.PI+90,0);
+  });
+  clouds.forEach(c=>{
+    const p=c.e.getLocalPosition();
+    let nx=p.x+c.speed*dt;
+    if(nx>45)nx=-45;
+    c.e.setLocalPosition(nx,p.y,p.z);
+  });
+});
 
 window.addEventListener('resize',()=>{
   app.resizeCanvas(window.innerWidth,window.innerHeight);
