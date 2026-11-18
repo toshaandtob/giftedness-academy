@@ -82,7 +82,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Ходите по островам, городу и подземельям. Добывайте блоки, открывайте сундуки, говорите с NPC и читайте письма.</p>
+        <p>Выполняйте задания NPC, чтобы открывать мосты и двигаться дальше.</p>
         <div class="quest"><span class="dot" id="questDot"></span><span id="questText">Добудь: золото</span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/4</p>
       </div>
@@ -157,10 +157,10 @@ app.start();
 const scene=app.scene;
 scene.ambientLight=new pc.Color(0.45,0.4,0.38);
 scene.fogColor=new pc.Color(0.9,0.75,0.6);
-scene.fogStart=30;scene.fogEnd=150;
+scene.fogStart=30;scene.fogEnd=170;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:500,clearColor:new pc.Color(0.9,0.75,0.6)});
+camera.addComponent('camera',{fov:60,near:0.1,far:600,clearColor:new pc.Color(0.9,0.75,0.6)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
@@ -198,8 +198,8 @@ app.root.addChild(world);
 // Солнце
 const sun=new pc.Entity('sun');
 sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.6],[1,0.85,0.5])});
-sun.setLocalPosition(60,40,-60);
-sun.setLocalScale(8,8,8);
+sun.setLocalPosition(70,45,-70);
+sun.setLocalScale(9,9,9);
 world.addChild(sun);
 
 // Локации
@@ -210,7 +210,9 @@ const islands=[
   {cx:-12,cz:12,type:'story',name:'Остров Возвращения',letter:'Ты почти у цели. Поделись тем, чему научился, поддержи других — и твой дар станет сильнее. Вернись домой с новыми силами.'},
   {cx:0,cz:0,type:'city',name:'Город Механикум'},
   {cx:-24,cz:0,type:'dungeon',name:'Подземелье Теней'},
-  {cx:24,cz:0,type:'dungeon',name:'Подземелье Искр'}
+  {cx:24,cz:0,type:'dungeon',name:'Подземелье Искр'},
+  {cx:24,cz:24,type:'extra',name:'Остров Мастерства'},
+  {cx:-24,cz:-24,type:'extra',name:'Остров Сада'}
 ];
 function islandRadius(t){return t==='city'?8:t==='dungeon'?5:6;}
 const BASE=8;
@@ -219,7 +221,7 @@ function islandTop(x,z){
     const r=islandRadius(isl.type);
     const dx=x-isl.cx,dz=z-isl.cz;
     if(dx*dx+dz*dz<=r*r){
-      const hill=isl.type==='story'?Math.max(0,Math.round(Math.sin(x*0.5)+Math.cos(z*0.5))):0;
+      const hill=(isl.type==='story'||isl.type==='extra')?Math.max(0,Math.round(Math.sin(x*0.5)+Math.cos(z*0.5))):0;
       return BASE+hill;
     }
   }
@@ -233,22 +235,27 @@ function islandAt(x,z){
   }
   return null;
 }
+// Мосты с заданиями
 const bridges=[
-  {x1:-12,z1:-12,x2:12,z2:-12},
-  {x1:12,z1:-12,x2:12,z2:12},
-  {x1:12,z1:12,x2:-12,z2:12},
-  {x1:-12,z1:12,x2:-12,z2:-12},
-  {x1:0,z1:0,x2:-12,z2:-12},
-  {x1:0,z1:0,x2:12,z2:-12},
-  {x1:0,z1:0,x2:12,z2:12},
-  {x1:0,z1:0,x2:-12,z2:12},
-  {x1:-12,z1:-12,x2:-24,z2:0},
-  {x1:-12,z1:12,x2:-24,z2:0},
-  {x1:12,z1:-12,x2:24,z2:0},
-  {x1:12,z1:12,x2:24,z2:0}
+  {x1:-12,z1:-12,x2:12,z2:-12,req:'t1'},
+  {x1:12,z1:-12,x2:12,z2:12,req:'t2'},
+  {x1:12,z1:12,x2:-12,z2:12,req:'t3'},
+  {x1:-12,z1:12,x2:-12,z2:-12,req:'t4'},
+  {x1:0,z1:0,x2:-12,z2:-12,req:'t4'},
+  {x1:0,z1:0,x2:12,z2:-12,req:'t4'},
+  {x1:0,z1:0,x2:12,z2:12,req:'t4'},
+  {x1:0,z1:0,x2:-12,z2:12,req:'t4'},
+  {x1:-12,z1:-12,x2:-24,z2:0,req:'t5'},
+  {x1:-12,z1:12,x2:-24,z2:0,req:'t5'},
+  {x1:12,z1:-12,x2:24,z2:0,req:'t5'},
+  {x1:12,z1:12,x2:24,z2:0,req:'t5'},
+  {x1:0,z1:0,x2:24,z2:24,req:'t5'},
+  {x1:0,z1:0,x2:-24,z2:-24,req:'t5'}
 ];
+bridges.forEach(b=>{b.locked=true;});
 function bridgeTop(x,z){
   for(const b of bridges){
+    if(b.locked)continue;
     const dx=b.x2-b.x1,dz=b.z2-b.z1;
     const len2=dx*dx+dz*dz;
     let t=((x-b.x1)*dx+(z-b.z1)*dz)/len2;
@@ -270,8 +277,8 @@ function cube(x,y,z,m){
 }
 
 // Строим локации
-for(let x=-30;x<30;x++){
-  for(let z=-30;z<30;z++){
+for(let x=-32;x<32;x++){
+  for(let z=-32;z<32;z++){
     const isl=islandAt(x,z);
     if(!isl)continue;
     const top=islandTop(x,z);
@@ -289,7 +296,7 @@ for(let x=-30;x<30;x++){
           t.setLocalScale(0.08,0.35,0.08);
           world.addChild(t);
         }
-        if(isl.type==='story'&&Math.random()<0.08){
+        if((isl.type==='story'||isl.type==='extra')&&Math.random()<0.08){
           const f=new pc.Entity();
           const fm=[mat([0.85,0.3,0.3]),mat([0.95,0.85,0.3]),mat([0.95,0.95,0.95])][Math.floor(Math.random()*3)];
           f.addComponent('render',{type:'box',material:fm});
@@ -317,7 +324,7 @@ islands.forEach(isl=>{
   world.addChild(base);
 });
 
-// Мосты
+// Мосты: плиты и барьеры
 bridges.forEach(b=>{
   const dx=b.x2-b.x1,dz=b.z2-b.z1;
   const len=Math.sqrt(dx*dx+dz*dz);
@@ -330,6 +337,15 @@ bridges.forEach(b=>{
     if(i%4===0){
       cube(x,BASE+1,z,copperMat);
     }
+  }
+  if(b.req){
+    const mx=(b.x1+b.x2)/2,mz=(b.z1+b.z2)/2;
+    const bar=new pc.Entity('barrier');
+    bar.addComponent('render',{type:'box',material:redMat});
+    bar.setLocalPosition(mx,BASE+1,mz);
+    bar.setLocalScale(1.4,1.4,1.4);
+    world.addChild(bar);
+    b.barrier=bar;
   }
 });
 
@@ -350,7 +366,6 @@ function house(x,z){
   }
 }
 house(-4,-4);house(4,-4);house(0,5);
-// Бочки
 for(let i=0;i<3;i++){
   const a=Math.random()*Math.PI*2;
   const rr=3+Math.random()*3;
@@ -364,7 +379,6 @@ for(let i=0;i<3;i++){
   barrel.setLocalScale(0.5,0.8,0.5);
   world.addChild(barrel);
 }
-// Таблички
 for(let i=0;i<2;i++){
   const x=i?3:-3;
   const z=i?-6:6;
@@ -416,10 +430,10 @@ function voxelTree(x,z,leafM){
     }
   }
 }
-islands.filter(i=>i.type==='story').forEach(isl=>{
+islands.filter(i=>i.type==='story'||i.type==='extra').forEach(isl=>{
   for(let i=0;i<4;i++){
     const a=Math.random()*Math.PI*2;
-    const r=2+Math.random()*(islandRadius('story')-3);
+    const r=2+Math.random()*(islandRadius(isl.type)-3);
     const x=Math.round(isl.cx+Math.cos(a)*r);
     const z=Math.round(isl.cz+Math.sin(a)*r);
     if(Math.abs(x-isl.cx)<2&&Math.abs(z-isl.cz)<2)continue;
@@ -436,8 +450,8 @@ islands.filter(i=>i.type==='city').forEach(isl=>{
   }
 });
 
-// Кусты
-islands.filter(i=>i.type==='story'||i.type==='city').forEach(isl=>{
+// Кусты, лампы, ящики
+islands.filter(i=>i.type!=='dungeon').forEach(isl=>{
   const r=islandRadius(isl.type);
   for(let i=0;i<3;i++){
     const a=Math.random()*Math.PI*2;
@@ -452,11 +466,6 @@ islands.filter(i=>i.type==='story'||i.type==='city').forEach(isl=>{
     b.setLocalScale(0.7,0.5,0.7);
     world.addChild(b);
   }
-});
-
-// Лампы и ящики
-islands.filter(i=>i.type==='story'||i.type==='city').forEach(isl=>{
-  const r=islandRadius(isl.type);
   for(let i=0;i<2;i++){
     const a=Math.random()*Math.PI*2;
     const rr=2+Math.random()*(r-2);
@@ -488,10 +497,10 @@ islands.filter(i=>i.type==='story'||i.type==='city').forEach(isl=>{
 
 // Облака
 const clouds=[];
-for(let i=0;i<6;i++){
+for(let i=0;i<8;i++){
   const c=new pc.Entity('cloud');
   c.addComponent('render',{type:'box',material:cloudMat});
-  c.setLocalPosition((Math.random()-0.5)*70,0+Math.random()*2,(Math.random()-0.5)*70);
+  c.setLocalPosition((Math.random()-0.5)*80,0+Math.random()*2,(Math.random()-0.5)*80);
   c.setLocalScale(5+Math.random()*4,0.5,2+Math.random()*2);
   world.addChild(c);
   clouds.push({e:c,speed:0.4+Math.random()*0.6});
@@ -530,16 +539,18 @@ function addChest(isl){
 }
 islands.filter(i=>i.type==='story').forEach(addChest);
 islands.filter(i=>i.type==='city').forEach(isl=>{addChest(isl);addChest(isl);});
-islands.filter(i=>i.type==='dungeon').forEach(addChest);
+islands.filter(i=>i.type==='dungeon'||i.type==='extra').forEach(addChest);
 
-// NPC
+// NPC и задания
 const npcs=[];
 const npcData=[
-  {name:'Инженер Айрон',color:[0.3,0.6,0.8],dialog:'Добро пожаловать на Остров Начал. Ищи блоки нужного цвета — за них дают еду. Берегись красных блоков: они опасны.'},
-  {name:'Механик Вента',color:[0.4,0.7,0.4],dialog:'На Острове Испытаний ошибки учат. Открывай сундуки, пополняй запасы и двигайся к следующему острову.'},
-  {name:'Архивариус Люмен',color:[0.6,0.45,0.85],dialog:'Знания живут в письмах. Добывай золотые блоки-письма и читай их — там путь дальше.'},
-  {name:'Проводник Нова',color:[0.9,0.55,0.3],dialog:'Ты почти у цели. Поделись знаниями с другими — и твой дар станет сильнее.'},
-  {name:'Мэр Коготь',color:[0.8,0.3,0.3],dialog:'Добро пожаловать в Город Механикум. Здесь можно передохнуть, открыть сундуки и получить подсказки.'}
+  {name:'Инженер Айрон',color:[0.3,0.6,0.8],task:'t1',taskText:'Добудь 2 золотых блока.',dialog:'Добро пожаловать на Остров Начал. Чтобы открыть мост на Остров Испытаний, добудь 2 золотых блока.'},
+  {name:'Механик Вента',color:[0.4,0.7,0.4],task:'t2',taskText:'Открой 1 сундук.',dialog:'На Острове Испытаний ошибки учат. Открой сундук, чтобы я открыл мост на Остров Знаний.'},
+  {name:'Архивариус Люмен',color:[0.6,0.45,0.85],task:'t3',taskText:'Прочитай письмо на этом острове.',dialog:'Знания живут в письмах. Прочитай письмо здесь, и я открою мост на Остров Возвращения.'},
+  {name:'Проводник Нова',color:[0.9,0.55,0.3],task:'t4',taskText:'Собери 3 еды.',dialog:'Ты почти у цели. Собери 3 еды, и я открою мосты к Городу и новым островам.'},
+  {name:'Мэр Коготь',color:[0.8,0.3,0.3],task:'t5',taskText:'Найди подземелье.',dialog:'Добро пожаловать в Город Механикум. Найди подземелье, и я открою мосты к подземельям и новым островам.'},
+  {name:'Мастер Зубр',color:[0.5,0.5,0.55],task:null,taskText:'',dialog:'На Острове Мастерства учат ремеслу. Добывай блоки, открывай сундуки и совершенствуй свой дар.'},
+  {name:'Садовница Флора',color:[0.4,0.7,0.4],task:null,taskText:'',dialog:'На Острове Сада растут цветы и травы. Здесь можно отдохнуть и набраться сил.'}
 ];
 function addNpc(isl,def){
   const r=islandRadius(isl.type);
@@ -554,20 +565,18 @@ function addNpc(isl,def){
   const head=new pc.Entity();head.addComponent('render',{type:'box',material:mat([0.9,0.75,0.6])});head.setLocalPosition(0,1.45,0);head.setLocalScale(0.45,0.45,0.45);g.addChild(head);
   const eye1=new pc.Entity();eye1.addComponent('render',{type:'box',material:mat([0.1,0.1,0.1])});eye1.setLocalPosition(-0.1,1.5,0.23);eye1.setLocalScale(0.08,0.08,0.02);g.addChild(eye1);
   const eye2=new pc.Entity();eye2.addComponent('render',{type:'box',material:mat([0.1,0.1,0.1])});eye2.setLocalPosition(0.1,1.5,0.23);eye2.setLocalScale(0.08,0.08,0.02);g.addChild(eye2);
-  // Руки
   const arm1=new pc.Entity();arm1.addComponent('render',{type:'box',material:mat(def.color)});arm1.setLocalPosition(-0.35,0.9,0);arm1.setLocalScale(0.15,0.6,0.15);g.addChild(arm1);
   const arm2=new pc.Entity();arm2.addComponent('render',{type:'box',material:mat(def.color)});arm2.setLocalPosition(0.35,0.9,0);arm2.setLocalScale(0.15,0.6,0.15);g.addChild(arm2);
-  // Шляпа
   const hat=new pc.Entity();hat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});hat.setLocalPosition(0,1.75,0);hat.setLocalScale(0.55,0.15,0.55);g.addChild(hat);
-  // Инструмент
   const tool=new pc.Entity();tool.addComponent('render',{type:'box',material:copperMat});tool.setLocalPosition(0.45,1.0,0.2);tool.setLocalScale(0.1,0.4,0.1);g.addChild(tool);
   g.setLocalPosition(x,top+0.5,z);
-  g.userData={npc:true,name:def.name,dialog:def.dialog,alive:true};
+  g.userData={npc:true,name:def.name,dialog:def.dialog,task:def.task,taskText:def.taskText,alive:true};
   world.addChild(g);
   npcs.push(g);
 }
 islands.filter(i=>i.type==='story').forEach((isl,i)=>addNpc(isl,npcData[i]));
 islands.filter(i=>i.type==='city').forEach(isl=>addNpc(isl,npcData[4]));
+islands.filter(i=>i.type==='extra').forEach((isl,i)=>addNpc(isl,npcData[5+i]));
 
 // Типы блоков
 const types=[
@@ -580,9 +589,11 @@ const types=[
 const questTypes=['gold','blue','purple','green'];
 
 let questType='gold';
-let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
+let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0,goldCollected=0;
 let visitedCity=false;
 const visitedDungeons=new Set();
+const visitedExtra=new Set();
+const tasks={t1:false,t2:false,t3:false,t4:false,t5:false};
 const ores=[];
 
 function randPosOnIsland(isl){
@@ -620,14 +631,33 @@ function setQuest(){
 }
 setQuest();
 
+// Задания и мосты
+function unlockBridges(req){
+  bridges.forEach(b=>{
+    if(b.req===req&&b.locked){
+      b.locked=false;
+      if(b.barrier)world.removeChild(b.barrier);
+    }
+  });
+}
+function checkTasks(){
+  if(!tasks.t1&&goldCollected>=2){tasks.t1=true;unlockBridges('t1');toast('Мост на Остров Испытаний открыт!');}
+  if(!tasks.t2&&chestsOpened>=1){tasks.t2=true;unlockBridges('t2');toast('Мост на Остров Знаний открыт!');}
+  if(!tasks.t3&&lettersRead>=3){tasks.t3=true;unlockBridges('t3');toast('Мост на Остров Возвращения открыт!');}
+  if(!tasks.t4&&foodTotal>=3){tasks.t4=true;unlockBridges('t4');toast('Мосты к Городу и новым островам открыты!');}
+  if(!tasks.t5&&visitedDungeons.size>=1){tasks.t5=true;unlockBridges('t5');toast('Мосты к подземельям и новым островам открыты!');}
+}
+
 // Квесты
 const quests=[
-  {text:'Прочитать 4 письма',done:()=>lettersRead>=4},
-  {text:'Собрать 5 еды',done:()=>foodTotal>=5},
-  {text:'Открыть 3 сундука',done:()=>chestsOpened>=3},
-  {text:'Набрать 10 очков',done:()=>score>=10},
+  {text:'Айрон: добыть 2 золота',done:()=>tasks.t1},
+  {text:'Вента: открыть сундук',done:()=>tasks.t2},
+  {text:'Люмен: прочитать письмо',done:()=>tasks.t3},
+  {text:'Нова: собрать 3 еды',done:()=>tasks.t4},
+  {text:'Мэр: найти подземелье',done:()=>tasks.t5},
+  {text:'Прочитать все письма',done:()=>lettersRead>=4},
   {text:'Побывать в городе',done:()=>visitedCity},
-  {text:'Найти подземелье',done:()=>visitedDungeons.size>=1}
+  {text:'Исследовать новые острова',done:()=>visitedExtra.size>=2}
 ];
 function renderQuests(){
   const ul=document.getElementById('questList');
@@ -662,7 +692,7 @@ updateHUD();
 function toast(text){
   const el=document.getElementById('toast');
   el.textContent=text;el.classList.add('show');
-  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1200);
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1500);
 }
 function flash(){
   const el=document.getElementById('flash');
@@ -676,13 +706,10 @@ const phead=new pc.Entity();phead.addComponent('render',{type:'box',material:mat
 for(let i=0;i<2;i++){
   const leg=new pc.Entity();leg.addComponent('render',{type:'box',material:mat([0.25,0.3,0.5])});leg.setLocalPosition(i?0.15:-0.15,0.25,0);leg.setLocalScale(0.2,0.5,0.2);player.addChild(leg);
 }
-// Руки
 for(let i=0;i<2;i++){
   const arm=new pc.Entity();arm.addComponent('render',{type:'box',material:mat([0.3,0.6,0.8])});arm.setLocalPosition(i?0.35:-0.35,0.9,0);arm.setLocalScale(0.15,0.6,0.15);player.addChild(arm);
 }
-// Шляпа
 const phat=new pc.Entity();phat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});phat.setLocalPosition(0,1.75,0);phat.setLocalScale(0.55,0.15,0.55);player.addChild(phat);
-// Ремень
 const pbelt=new pc.Entity();pbelt.addComponent('render',{type:'box',material:mat([0.25,0.2,0.15])});pbelt.setLocalPosition(0,0.45,0);pbelt.setLocalScale(0.6,0.1,0.4);player.addChild(pbelt);
 const startIsl=islands[0];
 player.setLocalPosition(startIsl.cx,groundTop(startIsl.cx,startIsl.cz)+0.5,startIsl.cz);
@@ -700,7 +727,7 @@ function updateCamera(){
 }
 updateCamera();
 
-// Ввод: клавиатура
+// Ввод
 const keys={up:false,down:false,left:false,right:false};
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
@@ -717,8 +744,6 @@ window.addEventListener('keyup',e=>{
   if(k==='arrowleft'||k==='a')keys.left=false;
   if(k==='arrowright'||k==='d')keys.right=false;
 });
-
-// Мобильные кнопки
 function bindPad(){
   document.querySelectorAll('.pad button').forEach(btn=>{
     const dir=btn.dataset.dir;
@@ -735,7 +760,6 @@ function bindPad(){
 }
 bindPad();
 
-// Поворот камеры
 let dragging=false,lastX=0,lastY=0,moved=false;
 canvas.addEventListener('pointerdown',e=>{
   dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;
@@ -786,6 +810,7 @@ function mineAt(cx,cy){
     document.getElementById('letterText').textContent=isl.letter;
     document.getElementById('letterModal').classList.add('show');
     lettersRead++;
+    checkTasks();
     updateHUD();
     if(lettersRead===4){
       setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
@@ -796,7 +821,9 @@ function mineAt(cx,cy){
   best.userData.alive=false;
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
   if(type===questType){
-    food++;foodTotal++;score++;toast('Верно! Получена еда.');
+    food++;foodTotal++;score++;
+    if(type==='gold')goldCollected++;
+    toast('Верно! Получена еда.');
     setTimeout(()=>spawnOre(type),1500);
   }else if(type==='red'){
     hearts-=2;flash();toast('Опасный блок! -2 сердца');
@@ -805,6 +832,7 @@ function mineAt(cx,cy){
     hearts-=1;flash();toast('Неправильный блок. -1 сердце');
     setTimeout(()=>spawnOre(type),1500);
   }
+  checkTasks();
   updateHUD();
   if(hearts<=0){
     gameOver=true;
@@ -836,12 +864,18 @@ function interact(){
       near.userData.lid.setLocalEulerAngles(-60,0,0);
       food++;foodTotal++;chestsOpened++;
       toast('Сундук открыт! Получена еда.');
+      checkTasks();
     }else{
       toast('Сундук пуст.');
     }
   }else if(near.userData.npc){
-    document.getElementById('npcName').textContent=near.userData.name;
-    document.getElementById('npcText').textContent=near.userData.dialog;
+    const def=near.userData;
+    let text=def.dialog;
+    if(def.task){
+      text+=tasks[def.task]?' Задание выполнено. Мост открыт!':' Задание: '+def.taskText;
+    }
+    document.getElementById('npcName').textContent=def.name;
+    document.getElementById('npcText').textContent=text;
     document.getElementById('npcModal').classList.add('show');
   }
   updateHUD();
@@ -878,13 +912,20 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 
 // Перезапуск
 document.getElementById('restart').addEventListener('click',()=>{
-  hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;
-  visitedCity=false;visitedDungeons.clear();
+  hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;goldCollected=0;
+  visitedCity=false;visitedDungeons.clear();visitedExtra.clear();
+  Object.keys(tasks).forEach(k=>tasks[k]=false);
   document.getElementById('gameover').classList.remove('show');
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
   letterBlocks.forEach(l=>{if(!l.userData.alive){l.userData.alive=true;world.addChild(l);}});
   chests.forEach(c=>{c.userData.opened=false;c.userData.lid.setLocalPosition(0,0.55,0);c.userData.lid.setLocalEulerAngles(0,0,0);});
+  bridges.forEach(b=>{
+    if(b.req){
+      b.locked=true;
+      if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);
+    }
+  });
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startIsl.cx,groundTop(startIsl.cx,startIsl.cz)+0.5,startIsl.cz);
   toast('Игра начата заново.');
@@ -930,7 +971,9 @@ app.on('update',dt=>{
   if(cur){
     if(cur.type==='city')visitedCity=true;
     if(cur.type==='dungeon')visitedDungeons.add(cur.name);
+    if(cur.type==='extra')visitedExtra.add(cur.name);
   }
+  checkTasks();
   near=findNear();
   const prompt=document.getElementById('prompt');
   const actionBtn=document.getElementById('actionBtn');
@@ -945,7 +988,7 @@ app.on('update',dt=>{
   clouds.forEach(c=>{
     const cp=c.e.getLocalPosition();
     let nx=cp.x+c.speed*dt;
-    if(nx>40)nx=-40;
+    if(nx>45)nx=-45;
     c.e.setLocalPosition(nx,cp.y,cp.z);
   });
 });
