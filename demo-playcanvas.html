@@ -158,6 +158,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <label><input type="checkbox" id="gfxShadows"> Тени</label>
     <label>Разрешение: <span id="gfxResVal">100%</span></label>
     <input type="range" id="gfxRes" min="0.5" max="1" step="0.05" value="1">
+    <label>Дальность прорисовки: <span id="cullDistVal">75</span></label>
+    <input type="range" id="cullDist" min="40" max="120" step="5" value="75">
     <button id="closeSettings">Закрыть</button>
   </div>
   <div class="hotbar">
@@ -177,7 +179,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок и графика — через ⚙.</p>
-    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней и с меньшим разрешением. «Высокая» — с тенями.</p>
+    <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней, с меньшим разрешением и зоной прорисовки. Дальние острова скрываются, чтобы не нагружать телефон.</p>
     <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок.</p>
     <button id="startGame">Начать игру</button>
   </div>
@@ -301,32 +303,6 @@ const world=new pc.Entity('world');
 app.root.addChild(world);
 const ores=[];
 
-const sun=new pc.Entity('sun');
-sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
-sun.setLocalPosition(90,55,-90);
-sun.setLocalScale(10,10,10);
-world.addChild(sun);
-
-const moon=new pc.Entity('moon');
-moon.addComponent('render',{type:'sphere',material:mat([0.9,0.9,0.95],[0.3,0.3,0.35])});
-moon.setLocalScale(7,7,7);
-world.addChild(moon);
-
-const clouds=[];
-for(let i=0;i<8;i++){
-  const g=new pc.Entity('cloud_'+i);
-  for(let k=0;k<3;k++){
-    const b=new pc.Entity();
-    b.addComponent('render',{type:'box',material:cloudMat});
-    b.setLocalPosition((k-1)*3+Math.random(),Math.random()*0.5,(Math.random()-0.5)*2);
-    b.setLocalScale(4+Math.random()*3,1.5,2.5+Math.random()*2);
-    g.addChild(b);
-  }
-  g.setLocalPosition((Math.random()-0.5)*200,35+Math.random()*15,(Math.random()-0.5)*200);
-  world.addChild(g);
-  clouds.push(g);
-}
-
 const LOCS=[
  {id:'intro',name:'Остров Начал',
   letter:'📖 Введение. Одаренность — системное качество психики, которое развивается в течение жизни. Риски: гипердиагностика и пропуск детей. В отечественной традиции (Богоявленская) одаренность — не статичный набор способностей.',
@@ -400,6 +376,19 @@ function locRadius(id){return 8;}
 const BASE=8;
 const MINE_Y=BASE-7;
 const MINE_HALF=4;
+
+const locBuckets=LOCS.map(()=>[]);
+function bucketEntity(e){
+  if(e.userData&&e.userData.noCull)return;
+  const p=e.getLocalPosition();
+  let best=0,bd=Infinity;
+  LOCS.forEach((l,i)=>{
+    const d=(p.x-l.cx)*(p.x-l.cx)+(p.z-l.cz)*(p.z-l.cz);
+    if(d<bd){bd=d;best=i;}
+  });
+  locBuckets[best].push(e);
+}
+
 function locTop(x,z){
   for(const l of LOCS){
     const r=locRadius(l.id);
@@ -454,6 +443,7 @@ function cube(x,y,z,m){
   b.addComponent('render',{type:'box',material:m});
   b.setLocalPosition(x,y,z);
   world.addChild(b);
+  bucketEntity(b);
 }
 
 LOCS.forEach((l,i)=>{
@@ -495,6 +485,7 @@ for(let x=-50;x<50;x++){
             t.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.55,z+(Math.random()-0.5)*0.6);
             t.setLocalScale(0.08,0.35,0.08);
             world.addChild(t);
+            bucketEntity(t);
           }
         }
         if(Math.random()<0.12){
@@ -504,6 +495,7 @@ for(let x=-50;x<50;x++){
           f.setLocalPosition(x+(Math.random()-0.5)*0.6,y+0.65,z+(Math.random()-0.5)*0.6);
           f.setLocalScale(0.18,0.18,0.18);
           world.addChild(f);
+          bucketEntity(f);
         }
       }
     }
@@ -517,6 +509,7 @@ LOCS.forEach(l=>{
   base.setLocalScale(r*1.4,6,r*1.4);
   base.setEulerAngles(180,0,0);
   world.addChild(base);
+  bucketEntity(base);
 });
 
 bridges.forEach(b=>{
@@ -539,6 +532,7 @@ bridges.forEach(b=>{
     bar.setLocalPosition(mx,BASE+1,mz);
     bar.setLocalScale(1.8,1.8,1.8);
     world.addChild(bar);
+    bucketEntity(bar);
     b.barrier=bar;
   }
 });
@@ -558,6 +552,7 @@ LOCS.forEach(l=>{
     const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.0,range:8});pl.setLocalPosition(0,1.6,0);g.addChild(pl);
     g.setLocalPosition(x,top+0.5,z);
     world.addChild(g);
+    bucketEntity(g);
   }
 });
 
@@ -584,6 +579,7 @@ function voxelTree(x,z,leafM){
     ap.setLocalScale(0.3,0.3,0.3);
     ap.userData={apple:true,alive:true};
     world.addChild(ap);
+    bucketEntity(ap);
     apples.push(ap);
   }
 }
@@ -619,6 +615,7 @@ LOCS.forEach((l,i)=>{
   ladder.setLocalPosition(mp.x+0.5,top+0.5,mp.z+0.5);
   ladder.userData={mine:true,loc:i,alive:true};
   world.addChild(ladder);
+  bucketEntity(ladder);
   mineEntrances.push(ladder);
   for(let dx=-MINE_HALF;dx<=MINE_HALF;dx++)for(let dz=-MINE_HALF;dz<=MINE_HALF;dz++){
     cube(mp.x+dx,MINE_Y,mp.z+dz,darkStone);
@@ -637,6 +634,7 @@ LOCS.forEach((l,i)=>{
   ladder2.setLocalPosition(mp.x+0.5,MINE_Y+0.5,mp.z+0.5);
   ladder2.userData={mine:true,loc:i,alive:true,underground:true};
   world.addChild(ladder2);
+  bucketEntity(ladder2);
   mineEntrances.push(ladder2);
   for(let k=0;k<4;k++){
     const a=k*Math.PI/2+Math.PI/4;
@@ -648,6 +646,7 @@ LOCS.forEach((l,i)=>{
     const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,1.6,0);torch.addChild(pl);
     torch.setLocalPosition(tx,MINE_Y+0.5,tz);
     world.addChild(torch);
+    bucketEntity(torch);
   }
 });
 
@@ -689,6 +688,7 @@ LOCS.forEach((l,i)=>{
   const game=GAMES[i%GAMES.length];
   g.userData={game:true,gameId:game.id,gameDef:game,alive:true};
   world.addChild(g);
+  bucketEntity(g);
   gameStations.push(g);
 });
 
@@ -708,6 +708,7 @@ function buildChessBoard(locIdx){
     cell.setLocalScale(0.9,0.3,0.9);
     cell.userData={chessCell:true,r:r,c:c,loc:locIdx,queen:false,alive:true};
     world.addChild(cell);
+    bucketEntity(cell);
     chessCells.push(cell);
   }
 }
@@ -734,6 +735,7 @@ function buildSeaBoard(locIdx){
     const isShip=ships.some(s=>s.some(x=>x.r===r&&x.c===c));
     cell.userData={seaCell:true,r:r,c:c,loc:locIdx,isShip:isShip,revealed:false,alive:true};
     world.addChild(cell);
+    bucketEntity(cell);
     seaCells.push(cell);
   }
 }
@@ -751,6 +753,7 @@ LOCS.forEach((l,i)=>{
   e.setLocalPosition(l.cx+2,top+1,l.cz);
   e.userData={letter:true,loc:i,alive:true};
   world.addChild(e);
+  bucketEntity(e);
   letterBlocks.push(e);
 });
 
@@ -770,6 +773,7 @@ LOCS.forEach((l,i)=>{
   b.setLocalPosition(l.cx,top+0.5,l.cz);
   b.userData={beacon:true,loc:i,alive:true};
   world.addChild(b);
+  bucketEntity(b);
   beacons.push(b);
 });
 
@@ -783,6 +787,7 @@ function addChestAt(l,p){
   g.setLocalPosition(p.x,top+0.5,p.z);
   g.userData={chest:true,opened:false,lid:lid,alive:true,loc:LOCS.indexOf(l)};
   world.addChild(g);
+  bucketEntity(g);
   chests.push(g);
 }
 LOCS.forEach(l=>{
@@ -817,6 +822,7 @@ LOCS.forEach((l,i)=>{
   const sz=Math.round(gz+(ux)*3);
   g.userData={npc:true,loc:i,alive:true,passed:false,base:{x:gx,z:gz},side:{x:sx,z:sz},lungeT:0,lungeDir:{x:0,z:0},marker:marker,stage:0};
   world.addChild(g);
+  bucketEntity(g);
   guards.push(g);
 });
 
@@ -853,7 +859,9 @@ function spawnOre(typeKey){
   const spot=l.oreSpots[Math.floor(Math.random()*l.oreSpots.length)];
   e.setLocalPosition(spot.x,MINE_Y+0.5,spot.z);
   e.userData={type:typeKey,alive:true};
-  world.addChild(e);ores.push(e);
+  world.addChild(e);
+  bucketEntity(e);
+  ores.push(e);
   return e;
 }
 function spawnInitial(){
@@ -933,6 +941,35 @@ function flash(){
   el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);
 }
 
+const sun=new pc.Entity('sun');
+sun.addComponent('render',{type:'sphere',material:mat([1,0.9,0.4],[1,0.85,0.3])});
+sun.setLocalPosition(90,55,-90);
+sun.setLocalScale(10,10,10);
+sun.userData={noCull:true};
+world.addChild(sun);
+
+const moon=new pc.Entity('moon');
+moon.addComponent('render',{type:'sphere',material:mat([0.9,0.9,0.95],[0.3,0.3,0.35])});
+moon.setLocalScale(7,7,7);
+moon.userData={noCull:true};
+world.addChild(moon);
+
+const clouds=[];
+for(let i=0;i<8;i++){
+  const g=new pc.Entity('cloud_'+i);
+  for(let k=0;k<3;k++){
+    const b=new pc.Entity();
+    b.addComponent('render',{type:'box',material:cloudMat});
+    b.setLocalPosition((k-1)*3+Math.random(),Math.random()*0.5,(Math.random()-0.5)*2);
+    b.setLocalScale(4+Math.random()*3,1.5,2.5+Math.random()*2);
+    g.addChild(b);
+  }
+  g.setLocalPosition((Math.random()-0.5)*200,35+Math.random()*15,(Math.random()-0.5)*200);
+  g.userData={noCull:true};
+  world.addChild(g);
+  clouds.push(g);
+}
+
 const player=new pc.Entity('player');
 const pbody=new pc.Entity();pbody.addComponent('render',{type:'box',material:mat([0.3,0.6,0.8])});pbody.setLocalPosition(0,0.75,0);pbody.setLocalScale(0.55,0.9,0.35);player.addChild(pbody);
 const phead=new pc.Entity();phead.addComponent('render',{type:'box',material:mat([0.9,0.75,0.6])});phead.setLocalPosition(0,1.45,0);phead.setLocalScale(0.45,0.45,0.45);player.addChild(phead);
@@ -945,6 +982,7 @@ for(let i=0;i<2;i++){
 const phat=new pc.Entity();phat.addComponent('render',{type:'box',material:mat([0.2,0.2,0.25])});phat.setLocalPosition(0,1.75,0);phat.setLocalScale(0.55,0.15,0.55);player.addChild(phat);
 const startLoc=LOCS[0];
 player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
+player.userData={noCull:true};
 world.addChild(player);
 
 const playerLayer=new pc.Layer({name:'Player'});
@@ -1095,6 +1133,9 @@ const gfxQuality=document.getElementById('gfxQuality');
 const gfxShadows=document.getElementById('gfxShadows');
 const gfxRes=document.getElementById('gfxRes');
 const gfxResVal=document.getElementById('gfxResVal');
+const cullDist=document.getElementById('cullDist');
+const cullDistVal=document.getElementById('cullDistVal');
+let CULL_DIST=75;
 function setShadows(e,on){
   if(e.render){e.render.castShadows=on;e.render.receiveShadows=on;}
   e.children.forEach(c=>setShadows(c,on));
@@ -1110,15 +1151,23 @@ function applyGraphics(){
     if(parseFloat(gfxRes.value)>0.75)gfxRes.value='0.75';
     scene.fogEnd=120;
     light.light.shadowDistance=40;
+    CULL_DIST=50;
+    cullDist.value='50';
   }else if(q==='medium'){
     shadows=false;
     gfxShadows.checked=false;
     scene.fogEnd=180;
     light.light.shadowDistance=70;
+    CULL_DIST=75;
+    cullDist.value='75';
   }else{
     scene.fogEnd=220;
     light.light.shadowDistance=100;
+    CULL_DIST=100;
+    cullDist.value='100';
   }
+  CULL_DIST=parseFloat(cullDist.value);
+  cullDistVal.textContent=CULL_DIST;
   light.light.castShadows=shadows;
   setShadows(world,shadows);
   app.graphicsDevice.maxPixelRatio=res;
@@ -1127,17 +1176,21 @@ function applyGraphics(){
   localStorage.setItem('gfxQuality',q);
   localStorage.setItem('gfxShadows',shadows?'1':'0');
   localStorage.setItem('gfxRes',String(res));
+  localStorage.setItem('cullDist',String(CULL_DIST));
 }
 const savedQ=localStorage.getItem('gfxQuality')||'medium';
 const savedSh=localStorage.getItem('gfxShadows');
 const savedRes=localStorage.getItem('gfxRes')||'1';
+const savedCull=localStorage.getItem('cullDist')||'75';
 gfxQuality.value=savedQ;
 if(savedSh!=null)gfxShadows.checked=savedSh==='1';
 gfxRes.value=savedRes;
+cullDist.value=savedCull;
 applyGraphics();
 gfxQuality.addEventListener('change',applyGraphics);
 gfxShadows.addEventListener('change',applyGraphics);
 gfxRes.addEventListener('input',applyGraphics);
+cullDist.addEventListener('input',()=>{CULL_DIST=parseFloat(cullDist.value);cullDistVal.textContent=CULL_DIST;localStorage.setItem('cullDist',String(CULL_DIST));});
 
 settingsBtn.addEventListener('click',()=>settingsPanel.classList.toggle('show'));
 document.getElementById('closeSettings').addEventListener('click',()=>settingsPanel.classList.remove('show'));
@@ -1158,6 +1211,7 @@ function placeBlock(){
   b.setLocalScale(0.9,0.9,0.9);
   b.userData={type:selectedBlock,alive:true,placed:true};
   world.addChild(b);
+  bucketEntity(b);
   ores.push(b);
   inventory[selectedBlock]--;
   toast('Блок поставлен: '+selectedBlock+'. По нему можно ходить.');
@@ -1668,6 +1722,7 @@ document.getElementById('startGame').addEventListener('click',()=>{
 let t=0;
 let dayTime=0;
 const DAY_LEN=120;
+let cullTimer=0;
 app.on('update',dt=>{
   t+=dt;
   dayTime=(dayTime+dt/DAY_LEN)%1;
@@ -1686,6 +1741,18 @@ app.on('update',dt=>{
       p.x+=dt*1.5;
       if(p.x>120)p.x=-120;
       c.setLocalPosition(p.x,p.y,p.z);
+    });
+  }
+  cullTimer-=dt;
+  if(cullTimer<=0){
+    cullTimer=0.25;
+    const p=player.getLocalPosition();
+    LOCS.forEach((l,i)=>{
+      const d=Math.hypot(p.x-l.cx,p.z-l.cz);
+      const show=d<=CULL_DIST;
+      locBuckets[i].forEach(e=>{
+        if(e!==player)e.enabled=show;
+      });
     });
   }
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
