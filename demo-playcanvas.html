@@ -114,7 +114,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / ЦФЫВ</b> или <b>стрелки</b> — движение. <b>Мышь</b> — поворот камеры. <b>ЛКМ</b> — добыть блок или прочитать письмо. <b>E</b> — действие (сундук, стражник, маяк).</p>
-    <p>Цель: пройти все острова по цепочке, читая письма с подсказками и проходя испытания стражников. В центре каждого острова — маяк с полным текстом лекции. Собранные письма и руда попадают в инвентарь (🎒).</p>
+    <p>Цель: пройти все острова по цепочке, читая письма с подсказками и проходя испытания стражников. В центре каждого острова — маяк с полным текстом лекции. Руда добывается только в специальных местах (светлые пятна на земле). Собранное попадает в инвентарь (🎒).</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -353,6 +353,13 @@ LOCS.forEach((l,i)=>{
   l.guardPos={x:Math.round(l.cx+ux*(r-3)),z:Math.round(l.cz+uz*(r-3))};
   addPath(l.cx,l.cz,l.chestPos.x,l.chestPos.z);
   addPath(l.cx,l.cz,l.guardPos.x,l.guardPos.z);
+  // Специальные места для руды (4 на остров)
+  l.oreSpots=[];
+  for(let k=0;k<4;k++){
+    const oa=k*Math.PI/2+Math.random()*0.5;
+    const orr=3+Math.random()*(r-4);
+    l.oreSpots.push({x:Math.round(l.cx+Math.cos(oa)*orr),z:Math.round(l.cz+Math.sin(oa)*orr)});
+  }
 });
 
 // Строим локации (большие, с тропинками, много травы и толстый дерн)
@@ -363,13 +370,14 @@ for(let x=-45;x<45;x++){
     const top=locTop(x,z);
     const key=x+','+z;
     const onPath=pathCells.has(key);
+    const onOreSpot=l.oreSpots.some(s=>s.x===x&&s.z===z);
     for(let y=BASE-5;y<=top;y++){
       const isTop=(y===top);
       let m;
       if(l.id==='dungeon1'||l.id==='dungeon2'){
         m=isTop?(onPath?stoneMat:darkStone):darkStone;
       }else{
-        m=isTop?(onPath?stoneMat:(Math.random()<0.4?grassMat:stoneMat)):dirtMat;
+        m=isTop?(onPath?stoneMat:(onOreSpot?dirtMat:(Math.random()<0.4?grassMat:stoneMat))):dirtMat;
       }
       cube(x,y,z,m);
       if(isTop&&m===grassMat){
@@ -721,15 +729,7 @@ const ores=[];
 // Инвентарь
 const inventory={gold:0,blue:0,purple:0,green:0,red:0,letters:0};
 
-function randPosOnLoc(l){
-  const r=locRadius(l.id);
-  const a=Math.random()*Math.PI*2;
-  const rr=3+Math.random()*(r-3);
-  const x=Math.round(l.cx+Math.cos(a)*rr);
-  const z=Math.round(l.cz+Math.sin(a)*rr);
-  return [x,groundTop(x,z),z];
-}
-// Руда — кластер из нескольких блоков
+// Руда — только в специальных местах (кластеры)
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
   const e=new pc.Entity('ore_'+typeKey+'_'+Math.random().toString(36).slice(2));
@@ -741,8 +741,9 @@ function spawnOre(typeKey){
     e.addChild(c);
   }
   const l=LOCS[Math.floor(Math.random()*LOCS.length)];
-  const p=randPosOnLoc(l);
-  e.setLocalPosition(p[0],p[1]+0.5,p[2]);
+  const spot=l.oreSpots[Math.floor(Math.random()*l.oreSpots.length)];
+  const top=groundTop(spot.x,spot.z)??BASE;
+  e.setLocalPosition(spot.x,top+0.5,spot.z);
   e.userData={type:typeKey,alive:true};
   world.addChild(e);ores.push(e);
   return e;
@@ -838,6 +839,22 @@ function updateCamera(){
   camera.lookAt(p);
 }
 updateCamera();
+
+// Коллизия: нельзя проходить сквозь дерн/стены и взбираться выше 1 блока
+function isBlocked(x,z,curTop){
+  const t=groundTop(x,z);
+  if(t==null)return true;
+  if(t-curTop>1)return true;
+  for(const l of LOCS){
+    if(l.id==='dungeon1'||l.id==='dungeon2'){
+      const dx=x-l.cx,dz=z-l.cz;
+      const dist=Math.sqrt(dx*dx+dz*dz);
+      const r=7;
+      if(dist>r-1.2&&dist<=r+0.2)return true;
+    }
+  }
+  return false;
+}
 
 // Ввод: e.code — работает на любой раскладке (WASD = ЦФЫВ)
 const keys={up:false,down:false,left:false,right:false};
@@ -1135,23 +1152,26 @@ app.on('update',dt=>{
     0,
     forward.z*(keys.up-keys.down)+right.z*(keys.right-keys.left)
   );
+  const p=player.getLocalPosition();
+  const curTop=groundTop(p.x,p.z)??BASE;
   if(move.length()>0){
     move.normalize();
     const speed=4;
-    const p=player.getLocalPosition();
     const nx=p.x+move.x*speed*dt;
     const nz=p.z+move.z*speed*dt;
-    if(groundTop(nx,nz)!=null){
+    if(!isBlocked(nx,nz,curTop)){
       player.setLocalPosition(nx,groundTop(nx,nz)+0.5,nz);
-    }else if(groundTop(nx,p.z)!=null){
+    }else if(!isBlocked(nx,p.z,curTop)){
       player.setLocalPosition(nx,groundTop(nx,p.z)+0.5,p.z);
-    }else if(groundTop(p.x,nz)!=null){
+    }else if(!isBlocked(p.x,nz,curTop)){
       player.setLocalPosition(p.x,groundTop(p.x,nz)+0.5,nz);
     }
   }
-  const p=player.getLocalPosition();
-  const targetY=(groundTop(p.x,p.z)??BASE)+0.5;
-  player.setLocalPosition(p.x,p.y+(targetY-p.y)*0.2,p.z);
+  const p2=player.getLocalPosition();
+  const targetY=(groundTop(p2.x,p2.z)??BASE)+0.5;
+  player.setLocalPosition(p2.x,p2.y+(targetY-p2.y)*0.2,p2.z);
+  // Персонаж смотрит туда, куда смотрит камера
+  player.setLocalEulerAngles(0,yaw*180/Math.PI+180,0);
   updateCamera();
   guards.forEach(g=>{
     const u=g.userData;
