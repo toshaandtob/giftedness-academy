@@ -126,7 +126,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Пройдите все локации: обелиск → стражник → мини-игра. Вся теория презентации — в игре.</p>
+        <p>Пройдите все локации: обелиск → стражник → мини-игра. Паркур между островами — прыгайте по блокам!</p>
         <div class="quest"><span class="dot gold"></span><span>Локаций пройдено: <span id="tasksDone">0</span>/<span id="tasksTotal">12</span></span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/<span id="lettersTotal">12</span></p>
       </div>
@@ -159,8 +159,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <div class="modal" id="tutorialModal">
   <div class="box">
     <h2>Как играть</h2>
-    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица (как в Minecraft). <b>ЛКМ</b> — добыть блок. <b>ПКМ</b> — поставить выбранный блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p>Шахта 9×9, высота 3 блока, без земли внутри. Камера не проходит сквозь блоки.</p>
+    <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица. <b>ЛКМ</b> — добыть/взаимодействовать. <b>ПКМ</b> — поставить блок. <b>Пробел / ⤒</b> — прыжок.</p>
+    <p><b>Паркур:</b> между островами — отдельные блоки с промежутками. Прыгайте с блока на блок!</p>
+    <p><b>Шахматы 3D:</b> кликните по ферзю — возьмите его, кликните по пустой клетке — поставьте. Расставьте 4 ферзя без конфликтов.</p>
+    <p><b>Деревья:</b> теперь с хитбоксами — сквозь стволы не пройти.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -393,7 +395,7 @@ function bridgeTop(x,z){
     if(t<0||t>1)continue;
     const px=b.x1+t*dx,pz=b.z1+t*dz;
     const d2=(x-px)*(x-px)+(z-pz)*(z-pz);
-    if(d2<=2.25)return BASE;
+    if(d2<=0.5)return BASE;
   }
   return null;
 }
@@ -477,12 +479,11 @@ bridges.forEach(b=>{
   const nx=dx/len,nz=dz/len;
   const px=-nz,pz=nx;
   for(let i=0;i<=steps;i++){
+    if(i%2!==0)continue;
     const t=i/steps;
     const x=b.x1+dx*t;
     const z=b.z1+dz*t;
-    for(let off=-1;off<=1;off++){
-      cube(Math.round(x+px*off),BASE,Math.round(z+pz*off),stoneMat);
-    }
+    cube(Math.round(x),BASE,Math.round(z),stoneMat);
   }
   if(b.req){
     const mx=(b.x1+b.x2)/2,mz=(b.z1+b.z2)/2;
@@ -514,9 +515,11 @@ LOCS.forEach(l=>{
 });
 
 const apples=[];
+const treeColliders=[];
 function voxelTree(x,z,leafM){
   const top=groundTop(x,z);
   if(top==null)return;
+  treeColliders.push({x:x,z:z});
   for(let i=0;i<3;i++)cube(x,top+i,z,trunkMat);
   for(let dy=3;dy<=4;dy++){
     for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
@@ -625,7 +628,7 @@ const GAMES=[
   ]},
  {id:'circus',title:'Звери в цирке',desc:'Запомните зверей, затем найдите того, кто исчез.',type:'circus'},
  {id:'sea',title:'Морской бой',desc:'Найдите все корабли: кликайте по блокам на 3D-доске 7×7.',type:'sea3d'},
- {id:'chess',title:'Сказочные шахматы',desc:'Расставьте 4 ферзя так, чтобы ни один не атаковал другого. Кликайте по блокам на 3D-доске 4×4.',type:'chess3d'}
+ {id:'chess',title:'Сказочные шахматы',desc:'Возьмите ферзя (клик по ферзю) и поставьте на другую клетку (клик по пустой клетке). Расставьте 4 ферзя без конфликтов.',type:'chess3d'}
 ];
 LOCS.forEach((l,i)=>{
   const gp=l.gamePos;
@@ -644,6 +647,7 @@ LOCS.forEach((l,i)=>{
 
 const chessCells=[];
 const seaCells=[];
+let heldQueen=null;
 const chessLoc=LOCS.findIndex(l=>l.id==='creative');
 const seaLoc=LOCS.findIndex(l=>l.id==='savenkov');
 function buildChessBoard(locIdx){
@@ -925,6 +929,9 @@ function isBlocked(x,z,curTop){
   if(t-curTop>1)return true;
   return false;
 }
+function nearTree(x,z){
+  return treeColliders.some(t=>Math.hypot(x-t.x,z-t.z)<0.6);
+}
 
 const keys={up:false,down:false,left:false,right:false,jump:false};
 window.addEventListener('keydown',e=>{
@@ -1066,32 +1073,37 @@ function mineAt(cx,cy){
   }
   if(best.userData.chessCell){
     const cell=best;
-    if(cell.userData.queen){
+    if(heldQueen){
+      if(cell.userData.queen){toast('Здесь уже стоит ферзь.');}
+      else{
+        cell.userData.queen=true;
+        const q=new pc.Entity();
+        q.addComponent('render',{type:'box',material:goldMat});
+        q.setLocalPosition(0,0.4,0);
+        q.setLocalScale(0.5,0.5,0.5);
+        q.userData={isQueen:true};
+        cell.addChild(q);
+        heldQueen=null;
+        toast('Ферзь поставлен.');
+        const queens=chessCells.filter(c=>c.userData.queen);
+        let conflict=false;
+        for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
+          const a=queens[i].userData,b=queens[j].userData;
+          if(a.r===b.r||a.c===b.c||Math.abs(a.r-b.r)===Math.abs(a.c-b.c))conflict=true;
+        }
+        if(queens.length===4){
+          if(conflict)toast('Ферзи атакуют друг друга! Переставьте.');
+          else toast('Отлично! 4 ферзя без конфликтов. Мини-игра пройдена!');
+        }
+      }
+    }else if(cell.userData.queen){
       cell.userData.queen=false;
       const q=cell.children.find(c=>c.userData&&c.userData.isQueen);
       if(q)cell.removeChild(q);
-      toast('Ферзь убран.');
+      heldQueen={r:cell.userData.r,c:cell.userData.c};
+      toast('Ферзь взят. Кликните по пустой клетке, чтобы поставить.');
     }else{
-      const count=chessCells.filter(c=>c.userData.queen).length;
-      if(count>=4){toast('Уже 4 ферзя. Уберите один.');return;}
-      cell.userData.queen=true;
-      const q=new pc.Entity();
-      q.addComponent('render',{type:'box',material:goldMat});
-      q.setLocalPosition(0,0.4,0);
-      q.setLocalScale(0.5,0.5,0.5);
-      q.userData={isQueen:true};
-      cell.addChild(q);
-      toast('Ферзь поставлен. '+(count+1)+'/4');
-      const queens=chessCells.filter(c=>c.userData.queen);
-      let conflict=false;
-      for(let i=0;i<queens.length;i++)for(let j=i+1;j<queens.length;j++){
-        const a=queens[i].userData,b=queens[j].userData;
-        if(a.r===b.r||a.c===b.c||Math.abs(a.r-b.r)===Math.abs(a.c-b.c))conflict=true;
-      }
-      if(queens.length===4){
-        if(conflict){toast('Ферзи атакуют друг друга! Уберите один.');}
-        else{toast('Отлично! Ни один ферзь не атакует другого. Мини-игра пройдена!');}
-      }
+      toast('Кликните по ферзю, чтобы взять его.');
     }
     return;
   }
@@ -1308,7 +1320,7 @@ function openGame(def){
   }else if(def.type==='sea3d'){
     body.innerHTML='<div class="note">Морской бой — 3D доска на острове. Подойдите к синим блокам и кликайте по ним, чтобы стрелять.</div>';
   }else if(def.type==='chess3d'){
-    body.innerHTML='<div class="note">Сказочные шахматы — 3D доска на острове. Подойдите к клеткам и кликайте, чтобы ставить/убирать ферзей (4 ферзя без конфликтов).</div>';
+    body.innerHTML='<div class="note">Шахматы 3D: кликните по ферзю — возьмите, кликните по пустой клетке — поставьте. 4 ферзя без конфликтов.</div>';
   }else{
     const quiz=def.quiz;
     let qi=0,qscore=0;
@@ -1483,6 +1495,7 @@ document.getElementById('restart').addEventListener('click',()=>{
   bridges.forEach(b=>{if(b.req){b.locked=true;if(b.barrier&&!b.barrier.parent)world.addChild(b.barrier);}});
   guards.forEach(g=>{g.userData.passed=false;g.userData.lungeT=0;g.userData.stage=0;});
   chessCells.forEach(c=>{c.userData.queen=false;const q=c.children.find(x=>x.userData&&x.userData.isQueen);if(q)c.removeChild(q);});
+  heldQueen=null;
   seaCells.forEach(c=>{c.userData.revealed=false;c.render.material=blueMat;});
   spawnInitial();setQuest();updateHUD();
   player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
@@ -1543,13 +1556,15 @@ app.on('update',dt=>{
           player.setLocalPosition(nx,MINE_Y+0.5,nz);
         }
       }
+    }else if(!onGround){
+      player.setLocalPosition(nx,p.y,nz);
     }else{
-      if(!isBlocked(nx,nz,curTop)){
-        player.setLocalPosition(nx,onGround?groundTop(nx,nz)+0.5:p.y,nz);
-      }else if(!isBlocked(nx,p.z,curTop)){
-        player.setLocalPosition(nx,onGround?groundTop(nx,p.z)+0.5:p.y,p.z);
-      }else if(!isBlocked(p.x,nz,curTop)){
-        player.setLocalPosition(p.x,onGround?groundTop(p.x,nz)+0.5:p.y,nz);
+      if(!isBlocked(nx,nz,curTop)&&!nearTree(nx,nz)){
+        player.setLocalPosition(nx,groundTop(nx,nz)+0.5,nz);
+      }else if(!isBlocked(nx,p.z,curTop)&&!nearTree(nx,p.z)){
+        player.setLocalPosition(nx,groundTop(nx,p.z)+0.5,p.z);
+      }else if(!isBlocked(p.x,nz,curTop)&&!nearTree(p.x,nz)){
+        player.setLocalPosition(p.x,groundTop(p.x,nz)+0.5,nz);
       }
     }
   }
