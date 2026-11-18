@@ -160,7 +160,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица (как в Minecraft). <b>ЛКМ</b> — добыть блок. <b>ПКМ</b> — поставить выбранный блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p>Выберите блок в хотбаре (золото/кристалл/руна/семя), затем ПКМ — поставить блок. На каждом острове: обелиск → стражник → мини-игра. Тени включены, своё тело не видно.</p>
+    <p>Выберите блок в хотбаре (золото/кристалл/руна/семя), затем ПКМ — поставить блок. На каждом острове: обелиск → стражник → мини-игра. Тени включены, своё тело не видно, коричневых декоративных блоков на мостах больше нет.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -479,11 +479,6 @@ bridges.forEach(b=>{
     const z=b.z1+dz*t;
     for(let off=-1;off<=1;off++){
       cube(Math.round(x+px*off),BASE,Math.round(z+pz*off),stoneMat);
-    }
-    if(i%4===0){
-      for(let off=-1;off<=1;off++){
-        cube(Math.round(x+px*off),BASE+1,Math.round(z+pz*off),woodMat);
-      }
     }
   }
   if(b.req){
@@ -893,7 +888,6 @@ const startLoc=LOCS[0];
 player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
 world.addChild(player);
 
-// Скрыть своё тело от камеры (первое лицо), но оставить тень
 const playerLayer=new pc.Layer({name:'Player'});
 app.scene.layers.push(playerLayer);
 function setPlayerLayer(e){
