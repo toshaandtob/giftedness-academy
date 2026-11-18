@@ -16,6 +16,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .heart{color:#ff5a5a}
 .heart.empty{color:rgba(255,255,255,.25)}
 #compass{position:absolute;left:50%;top:60px;transform:translateX(-50%);font-size:28px;color:#ffe9a8;text-shadow:0 2px 6px #000;pointer-events:none}
+#eventBanner{position:absolute;left:50%;top:110px;transform:translateX(-50%);background:rgba(142,107,214,.85);color:#fff;padding:.4rem .9rem;border-radius:10px;border:1px solid rgba(255,255,255,.4);font-family:'Marcellus',serif;display:none;pointer-events:none}
+#eventBanner.show{display:block}
 .hotbar{position:absolute;right:20px;bottom:20px;display:flex;gap:8px;padding:8px;background:rgba(20,20,20,.55);border:2px solid rgba(255,255,255,.25);border-radius:10px;backdrop-filter:blur(4px);pointer-events:auto;transform-origin:bottom right;transform:scale(var(--btnScale))}
 .slot{width:56px;height:56px;border:2px solid rgba(255,255,255,.35);border-radius:8px;display:grid;place-items:center;position:relative;background:rgba(0,0,0,.35);cursor:pointer}
 .slot .icon{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;font-size:20px}
@@ -100,6 +102,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   .score{font-size:.8rem}
   .hearts{bottom:10px;font-size:13px;gap:1px}
   #compass{font-size:20px;top:50px}
+  #eventBanner{font-size:.7rem;top:90px}
   .crosshair{width:14px;height:14px;border-width:1.5px}
   #joystick{left:10px;bottom:10px;width:100px;height:100px}
   #joyKnob{width:40px;height:40px}
@@ -138,11 +141,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <p>Пройдите все локации: стражник → мини-игра. Паркур между островами — прыгайте по блокам!</p>
         <div class="quest"><span class="dot gold"></span><span>Локаций пройдено: <span id="tasksDone">0</span>/<span id="tasksTotal">12</span></span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/<span id="lettersTotal">12</span></p>
-        <p>Сферы знаний: <span id="orbCount">0</span> · Собрано сфер подряд: <span id="orbStreak">0</span>/5</p>
+        <p>Сферы знаний: <span id="orbCount">0</span> · Серия: <span id="orbStreak">0</span>/5</p>
       </div>
     </div>
   </div>
   <div id="compass">➤</div>
+  <div id="eventBanner"></div>
   <div class="crosshair"></div>
   <div class="hearts" id="hearts"></div>
   <div class="prompt" id="prompt">E — действие</div>
@@ -185,20 +189,21 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Академия знаний</h2>
     <p>Психолого-педагогическая диагностика одаренности</p>
-    <p>В начале игры Рассказчик устно объяснит правила и управление. Тест для входа не нужен — можно сразу играть!</p>
+    <p>Правила и управление объясняются в начале игры. Стройте мосты из блоков, собирайте сферы, открывайте сундуки-сюрпризы и проходите стражников!</p>
     <button id="startGameBtn">🎮 Начать игру</button>
     <button id="openTheory" style="margin-top:.4rem">📚 Материал (по желанию)</button>
   </div>
 </div>
 <div class="modal" id="rulesModal">
   <div class="box">
-    <h2>🔊 Рассказчик: правила игры</h2>
-    <p id="rulesText">Добро пожаловать в Академию знаний! Ваша задача — пройти 12 островов. На каждом острове стоит стражник: подойдите к нему, и он сразу задаст вопрос по материалу. Правильный ответ откроет мост на следующий остров. Неправильный — минус одно сердце.
-
-Собирайте светящиеся сферы знаний: за каждую — очки и еда, а за 5 подряд — дополнительное сердце. Яблоки на деревьях и сундуки тоже дают еду. Некоторые сундуки — с сюрпризом!
-
-Обелиски и мини-игры необязательны: это дополнительный материал и практика. Компас сверху подскажет путь к следующему стражнику. На телефоне двигайтесь джойстиком слева, смотрите свайпом справа, прыгайте кнопкой со стрелкой. На компьютере — WASD, мышь и пробел.</p>
-    <button id="speakRules">🔊 Прослушать правила</button>
+    <h2>Правила игры</h2>
+    <p><b>Цель:</b> пройти 12 островов. На каждом — стражник с вопросом; верный ответ открывает мост на следующий остров.</p>
+    <p><b>Стройка:</b> добывайте руду в шахтах (лестница вниз), выбирайте тип блока в хотбаре и ставьте его ПКМ (на ПК) или через слот. Из блоков можно строить мосты и лестницы — по ним можно ходить и прыгать.</p>
+    <p><b>Барьеры:</b> закрытые мосты перегорожены высокими барьерами — через них не перепрыгнуть, пока стражник не пропустит.</p>
+    <p><b>Сферы знаний:</b> светящиеся шарики; 5 подряд — +1 сердце. Яблоки и сундуки дают еду; часть сундуков — сюрпризы.</p>
+    <p><b>События:</b> время от времени случаются ивенты: дождь сфер, золотая жила, таинственный сундук.</p>
+    <p><b>Мини-игры:</b> на станциях — память, последовательности, морской бой, шахматы, Равен, ассоциации и другие. Необязательны, но дают очки.</p>
+    <p><b>Управление:</b> телефон — джойстик слева, свайп справа, ⤒ — прыжок; ПК — WASD, мышь, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок, E — действие.</p>
     <button id="closeRules">Начать приключение</button>
   </div>
 </div>
@@ -238,7 +243,6 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <p id="npcText"></p>
     <h3 id="quizQ" style="font:700 1.1rem/1.3 'Marcellus',serif;color:#ffe9a8;margin:.6rem 0 .3rem"></h3>
     <div class="quizOpts" id="quizOpts"></div>
-    <button id="speakQuiz" style="margin-top:.4rem">🔊 Прослушать вопрос</button>
     <button id="closeNpc">Закрыть</button>
   </div>
 </div>
@@ -572,13 +576,21 @@ bridges.forEach(b=>{
     const mx=(b.x1+b.x2)/2,mz=(b.z1+b.z2)/2;
     const bar=new pc.Entity('barrier');
     bar.addComponent('render',{type:'box',material:redMat});
-    bar.setLocalPosition(mx,BASE+1,mz);
-    bar.setLocalScale(1.8,1.8,1.8);
+    bar.setLocalPosition(mx,BASE+1.5,mz);
+    bar.setLocalScale(2.2,3,2.2);
     world.addChild(bar);
     bucketEntity(bar);
     b.barrier=bar;
+    b.mid={x:mx,z:mz};
   }
 });
+function barrierAt(x,z){
+  for(const b of bridges){
+    if(!b.locked||!b.mid)continue;
+    if(Math.hypot(x-b.mid.x,z-b.mid.z)<1.4)return true;
+  }
+  return false;
+}
 
 LOCS.forEach(l=>{
   const r=locRadius(l.id);
@@ -717,7 +729,10 @@ const GAMES=[
   ]},
  {id:'circus',title:'Звери в цирке',desc:'Запомните зверей, затем найдите того, кто исчез.',type:'circus'},
  {id:'sea',title:'Морской бой',desc:'Найдите все корабли: кликайте по блокам на 3D-доске 7×7.',type:'sea3d'},
- {id:'chess',title:'Сказочные шахматы',desc:'Возьмите ферзя (клик по ферзю) и поставьте на другую клетку (клик по пустой клетке). Расставьте 4 ферзя без конфликтов.',type:'chess3d'}
+ {id:'chess',title:'Сказочные шахматы',desc:'Возьмите ферзя (клик по ферзю) и поставьте на другую клетку (клик по пустой клетке). Расставьте 4 ферзя без конфликтов.',type:'chess3d'},
+ {id:'pairs',title:'Найди пару',desc:'Открывайте карточки и находите одинаковые пары: понятия и их определения.',type:'pairs'},
+ {id:'sequence',title:'Повтори последовательность',desc:'Запомните порядок мигающих клеток и повторите его. Каждый раунд — на одну клетку длиннее.',type:'sequence'},
+ {id:'order',title:'Собери этап диагностики',desc:'Расставьте этапы диагностики одаренности в правильном порядке.',type:'order'}
 ];
 LOCS.forEach((l,i)=>{
   const gp=l.gamePos;
@@ -881,7 +896,7 @@ const questTypes=['gold','blue','purple','green'];
 let questType='gold';
 let hearts=3,maxHearts=5,food=0,foodTotal=0,score=0,gameOver=false,lettersRead=0,chestsOpened=0;
 let orbsCollected=0,orbStreak=0;
-const achievements={firstOre:false,firstApple:false,orbs5:false,allGuards:false};
+const achievements={firstOre:false,firstApple:false,orbs5:false,allGuards:false,builder:false};
 const tasks={};
 for(let i=1;i<=12;i++)tasks['t'+i]=false;
 const inventory={gold:0,blue:0,purple:0,green:0,red:0};
@@ -889,6 +904,7 @@ const collectedLetters=[];
 let selectedLetter=null;
 let selectedBlock='gold';
 let vy=0,onGround=true;
+let blocksPlaced=0;
 
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
@@ -1004,6 +1020,12 @@ function toast(text){
   el.textContent=text;el.classList.add('show');
   clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1500);
 }
+function eventBanner(text){
+  const el=document.getElementById('eventBanner');
+  el.textContent='✨ '+text;
+  el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4000);
+}
 function flash(){
   const el=document.getElementById('flash');
   el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);
@@ -1012,15 +1034,6 @@ function achieve(key,text){
   if(achievements[key])return;
   achievements[key]=true;
   toast('🏆 Достижение: '+text);
-}
-function speak(text){
-  if(window.speechSynthesis){
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='ru-RU';
-    u.rate=0.95;
-    speechSynthesis.speak(u);
-  }
 }
 
 const sun=new pc.Entity('sun');
@@ -1093,6 +1106,7 @@ function isBlocked(x,z,curTop){
   const t=groundTop(x,z);
   if(t==null)return true;
   if(t-curTop>1)return true;
+  if(barrierAt(x,z))return true;
   return false;
 }
 function nearTree(x,z){
@@ -1286,7 +1300,7 @@ if(!isTouch){
 
 function placeBlock(){
   if(gameOver)return;
-  if(inventory[selectedBlock]<=0){toast('Нет блоков типа: '+selectedBlock);return;}
+  if(inventory[selectedBlock]<=0){toast('Нет блоков типа: '+selectedBlock+'. Добудьте руду в шахте.');return;}
   const p=player.getLocalPosition();
   const forward=new pc.Vec3(-Math.sin(yaw),0,-Math.cos(yaw));
   const bx=Math.round(p.x+forward.x*2);
@@ -1303,7 +1317,9 @@ function placeBlock(){
   bucketEntity(b);
   ores.push(b);
   inventory[selectedBlock]--;
-  toast('Блок поставлен: '+selectedBlock+'. По нему можно ходить.');
+  blocksPlaced++;
+  if(blocksPlaced>=5)achieve('builder','Строитель: 5 блоков поставлено!');
+  toast('Блок поставлен: '+selectedBlock+'. По нему можно ходить и строить мосты.');
   updateHUD();
 }
 
@@ -1563,7 +1579,6 @@ function openQuiz(guard){
     opts.appendChild(btn);
   });
   document.getElementById('npcModal').classList.add('show');
-  speak(q.q+'. Варианты: '+q.opts.join(', ')+'.');
 }
 
 function openGame(def){
@@ -1638,6 +1653,68 @@ function openGame(def){
     body.innerHTML='<div class="note">Морской бой — 3D доска на острове. Подойдите к синим блокам и кликайте по ним, чтобы стрелять.</div>';
   }else if(def.type==='chess3d'){
     body.innerHTML='<div class="note">Шахматы 3D: кликните по ферзю — возьмите, кликните по пустой клетке — поставьте. 4 ферзя без конфликтов.</div>';
+  }else if(def.type==='pairs'){
+    const pairs=[['Одаренность','Системное качество психики'],['Рензулли','Способности + креативность + мотивация'],['Креативное поле','Метод Богоявленской'],['Карта одаренности','Методика Савенкова'],['ОВК','Методика Шумаковой'],['Векслер','Шкалы интеллекта']];
+    const cards=[...pairs.flatMap((p,i)=>[{i,text:p[0]},{i,text:p[1]}])].sort(()=>Math.random()-0.5);
+    const grid=document.createElement('div');grid.className='row';
+    const note=document.createElement('div');note.className='note';note.textContent='Найдите все 6 пар.';
+    let open=[],found=0;
+    cards.forEach(c=>{
+      const cell=document.createElement('div');cell.className='cell';cell.style.width='auto';cell.style.padding='0.3rem 0.5rem';cell.style.fontSize='0.7rem';cell.textContent='?';
+      cell.addEventListener('click',()=>{
+        if(cell.classList.contains('queen')||open.length>=2)return;
+        cell.textContent=c.text;open.push({cell,c});
+        if(open.length===2){
+          if(open[0].c.i===open[1].c.i){
+            open.forEach(o=>o.cell.classList.add('queen'));found++;
+            note.textContent='Пара найдена! Осталось: '+(6-found);
+            open=[];
+            if(found===6)note.textContent='Победа! Все пары найдены!';
+          }else{
+            const o=open;open=[];
+            setTimeout(()=>{o.forEach(x=>x.cell.textContent='?');},700);
+          }
+        }
+      });
+      grid.appendChild(cell);
+    });
+    body.appendChild(grid);body.appendChild(note);
+  }else if(def.type==='sequence'){
+    const cells=[];const seq=[];let round=1,input=[];
+    const grid=document.createElement('div');grid.className='row';
+    const note=document.createElement('div');note.className='note';note.textContent='Запомните порядок...';
+    for(let i=0;i<6;i++){const c=document.createElement('div');c.className='cell';c.textContent=i+1;grid.appendChild(c);cells.push(c);}
+    function showSeq(){
+      seq.push(Math.floor(Math.random()*6));
+      note.textContent='Запомните '+seq.length+' клеток...';
+      seq.forEach((idx,k)=>{
+        setTimeout(()=>{cells[idx].classList.add('queen');setTimeout(()=>cells[idx].classList.remove('queen'),350);},k*600);
+      });
+      setTimeout(()=>{note.textContent='Повторите последовательность!';input=[];},seq.length*600+300);
+    }
+    cells.forEach((c,i)=>c.addEventListener('click',()=>{
+      if(input.length>=seq.length)return;
+      input.push(i);
+      if(input[input.length-1]!==seq[input.length-1]){note.textContent='Ошибка! Начните заново.';seq.length=0;setTimeout(showSeq,800);return;}
+      if(input.length===seq.length){note.textContent='Верно! Раунд '+round+' пройден.';round++;setTimeout(showSeq,800);}
+    }));
+    body.appendChild(grid);body.appendChild(note);
+    setTimeout(showSeq,500);
+  }else if(def.type==='order'){
+    const steps=['Наблюдение','Тестирование','Анализ продуктов деятельности','Экспертная оценка','Разработка траектории'];
+    const shuffled=[...steps].sort(()=>Math.random()-0.5);
+    const note=document.createElement('div');note.className='note';note.textContent='Кликайте этапы в правильном порядке.';
+    const row=document.createElement('div');row.className='row';
+    let idx=0;
+    shuffled.forEach(s=>{
+      const b=document.createElement('div');b.className='cell';b.style.width='auto';b.style.padding='0.3rem 0.5rem';b.style.fontSize='0.7rem';b.textContent=s;
+      b.addEventListener('click',()=>{
+        if(s===steps[idx]){b.classList.add('queen');idx++;if(idx===steps.length)note.textContent='Верно! Этапы расставлены правильно!';}
+        else{b.classList.add('bad');note.textContent='Не тот этап. Порядок: наблюдение → тесты → продукты → эксперты → траектория.';}
+      });
+      row.appendChild(b);
+    });
+    body.appendChild(row);body.appendChild(note);
   }else{
     const quiz=def.quiz;
     let qi=0,qscore=0;
@@ -1714,12 +1791,6 @@ function interact(){
 document.getElementById('actionBtn').addEventListener('click',interact);
 document.getElementById('closeNpc').addEventListener('click',()=>{
   document.getElementById('npcModal').classList.remove('show');
-  speechSynthesis.cancel();
-});
-document.getElementById('speakQuiz').addEventListener('click',()=>{
-  const q=document.getElementById('quizQ').textContent;
-  const opts=[...document.getElementById('quizOpts').children].map(b=>b.textContent).join(', ');
-  speak(q+'. Варианты: '+opts+'.');
 });
 document.getElementById('closeGame').addEventListener('click',()=>{
   document.getElementById('gameModal').classList.remove('show');
@@ -1803,7 +1874,7 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
 
 document.getElementById('restart').addEventListener('click',()=>{
   hearts=3;food=0;foodTotal=0;score=0;gameOver=false;lettersRead=0;chestsOpened=0;
-  orbsCollected=0;orbStreak=0;
+  orbsCollected=0;orbStreak=0;blocksPlaced=0;
   for(let i=1;i<=12;i++)tasks['t'+i]=false;
   inventory.gold=0;inventory.blue=0;inventory.purple=0;inventory.green=0;inventory.red=0;
   collectedLetters.length=0;selectedLetter=null;
@@ -1898,20 +1969,16 @@ document.getElementById('closeTest').addEventListener('click',()=>{
 document.getElementById('startGameBtn').addEventListener('click',()=>{
   document.getElementById('startScreen').classList.remove('show');
   document.getElementById('rulesModal').classList.add('show');
-  speak(document.getElementById('rulesText').textContent);
-});
-document.getElementById('speakRules').addEventListener('click',()=>{
-  speak(document.getElementById('rulesText').textContent);
 });
 document.getElementById('closeRules').addEventListener('click',()=>{
   document.getElementById('rulesModal').classList.remove('show');
-  speechSynthesis.cancel();
 });
 
 let t=0;
 let dayTime=0;
 const DAY_LEN=120;
 let cullTimer=0;
+let eventTimer=20;
 app.on('update',dt=>{
   t+=dt;
   dayTime=(dayTime+dt/DAY_LEN)%1;
@@ -1939,6 +2006,24 @@ app.on('update',dt=>{
       o.setLocalEulerAngles(0,t*40,0);
     }
   });
+  eventTimer-=dt;
+  if(eventTimer<=0){
+    eventTimer=25+Math.random()*15;
+    const roll=Math.random();
+    if(roll<0.4){
+      eventBanner('Дождь сфер! Появились 3bonus сферы знаний!');
+      for(let i=0;i<3;i++)spawnOrb();
+    }else if(roll<0.7){
+      eventBanner('Золотая жила! В шахтах появилось золото!');
+      for(let i=0;i<2;i++)spawnOre('gold');
+    }else{
+      eventBanner('Таинственный сундук! Ищите новый сундук-сюрприз!');
+      const l=LOCS[Math.floor(Math.random()*LOCS.length)];
+      const a=Math.random()*Math.PI*2;
+      const rr=2+Math.random()*(locRadius(l.id)-3);
+      addChestAt(l,{x:Math.round(l.cx+Math.cos(a)*rr),z:Math.round(l.cz+Math.sin(a)*rr)});
+    }
+  }
   cullTimer-=dt;
   if(cullTimer<=0){
     cullTimer=0.25;
@@ -1995,7 +2080,7 @@ app.on('update',dt=>{
         }
       }
     }else if(!onGround){
-      player.setLocalPosition(nx,p.y,nz);
+      if(!barrierAt(nx,nz))player.setLocalPosition(nx,p.y,nz);
     }else{
       if(!isBlocked(nx,nz,curTop)&&!nearTree(nx,nz)){
         player.setLocalPosition(nx,groundTop(nx,nz)+0.5,nz);
