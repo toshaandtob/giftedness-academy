@@ -133,7 +133,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="panel-toggle" id="questToggle">▾</button>
       </div>
       <div class="panel-body">
-        <p>Пройдите все локации: обелиск → стражник → мини-игра. Паркур между островами — прыгайте по блокам!</p>
+        <p>Пройдите все локации: стражник → мини-игра. Паркур между островами — прыгайте по блокам!</p>
         <div class="quest"><span class="dot gold"></span><span>Локаций пройдено: <span id="tasksDone">0</span>/<span id="tasksTotal">12</span></span></div>
         <p>Счёт: <span class="score" id="score">0</span> · Еда: <span id="foodCount">0</span> · Письма: <span id="lettersCount">0</span>/<span id="lettersTotal">12</span></p>
       </div>
@@ -215,6 +215,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <h2>Как играть</h2>
     <p><b>Телефон:</b> джойстик слева — движение (как в Minecraft PE), правая половина экрана — поворот камеры (свайп), тап справа — действие. Кнопка ⤒ — прыжок. Размер кнопок и графика — через ⚙.</p>
     <p><b>ПК:</b> WASD — движение, мышь — камера, ЛКМ — добыть, ПКМ — поставить блок, Пробел — прыжок, E — действие. Мобильные кнопки на ПК скрыты.</p>
+    <p><b>Стражники:</b> подойдите к стражнику — он сразу даст тестовый вопрос по материалу. Ответьте верно — и перейдёте на следующий остров.</p>
     <p><b>Графика:</b> для слабых телефонов выберите «Низкая» — без теней, с меньшим разрешением и зоной прорисовки. Дальние острова скрываются, чтобы не нагружать телефон.</p>
     <button id="startGame">Начать игру</button>
   </div>
@@ -922,7 +923,7 @@ function tasksDoneCount(){
   let n=0;for(let i=1;i<=12;i++)if(tasks['t'+i])n++;return n;
 }
 
-const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: обелиск → стражник → мини-игра.',done:()=>tasks['t'+(i+1)]}));
+const quests=LOCS.map((l,i)=>({text:'Локация «'+l.name+'»: стражник → мини-игра.',done:()=>tasks['t'+(i+1)]}));
 function renderQuests(){
   const ul=document.getElementById('questList');
   ul.innerHTML='';
@@ -1309,12 +1310,6 @@ function mineAt(cx,cy){
     document.getElementById('letterTitle').textContent='Маяк знаний: '+l.name;
     document.getElementById('letterText').textContent=l.letter;
     document.getElementById('letterModal').classList.add('show');
-    guards.forEach(g=>{
-      if(g.userData.stage===0&&g.userData.loc===best.userData.loc){
-        g.userData.stage=1;
-        toast('Стражник: ты готов! Поговори со мной.');
-      }
-    });
     updateHUD();
     return;
   }
@@ -1437,24 +1432,14 @@ function interactChest(c){
 }
 
 function interactGuard(g){
-  const l=LOCS[g.userData.loc];
-  const u=g.userData;
-  if(u.stage===0){
-    document.getElementById('npcName').textContent=l.npc.name;
-    document.getElementById('npcText').textContent='Задание 1: прочитай обелиск в центре острова. Задание 2: пройди мини-игру на станции рядом. Потом возвращайся ко мне.';
-    document.getElementById('quizQ').textContent='';
-    document.getElementById('quizOpts').innerHTML='';
-    document.getElementById('npcModal').classList.add('show');
-  }else{
-    openQuiz(g);
-  }
+  openQuiz(g);
 }
 
 function openQuiz(guard){
   const l=LOCS[guard.userData.loc];
   const q=l.npc.quiz;
   document.getElementById('npcName').textContent=l.npc.name;
-  document.getElementById('npcText').textContent='Ты изучил знания через обелиск и мини-игру. Теперь ответь на вопрос — и я пропущу тебя.';
+  document.getElementById('npcText').textContent='Ответь на вопрос по материалу — и я пропущу тебя на следующий остров.';
   document.getElementById('quizQ').textContent=q.q;
   const opts=document.getElementById('quizOpts');
   opts.innerHTML='';
@@ -1468,7 +1453,7 @@ function openQuiz(guard){
         tasks['t'+idx]=true;
         unlockBridges('t'+idx);
         guard.userData.passed=true;
-        toast('Испытание пройдено! Стражник пропускает вас.');
+        toast('Верно! Стражник пропускает вас.');
         updateHUD();
         if(idx===12){
           setTimeout(()=>document.getElementById('finalModal').classList.add('show'),500);
@@ -1621,12 +1606,6 @@ function interact(){
     document.getElementById('letterTitle').textContent='Маяк знаний: '+l.name;
     document.getElementById('letterText').textContent=l.letter;
     document.getElementById('letterModal').classList.add('show');
-    guards.forEach(g=>{
-      if(g.userData.stage===0&&g.userData.loc===near.userData.loc){
-        g.userData.stage=1;
-        toast('Стражник: ты готов! Поговори со мной.');
-      }
-    });
   }else if(near.userData.game){
     openGame(near.userData.gameDef);
   }else if(near.userData.mine){
@@ -1972,7 +1951,7 @@ app.on('update',dt=>{
     else if(near.userData.beacon)prompt.textContent='E / клик — прочитать знания';
     else if(near.userData.game)prompt.textContent='E / клик — мини-игра: '+near.userData.gameDef.title;
     else if(near.userData.mine)prompt.textContent='E / клик — '+(near.userData.underground?'подняться':'спуститься в шахту');
-    else prompt.textContent='E / клик — поговорить со стражником';
+    else prompt.textContent='E / клик — тестовый вопрос от стражника';
   }else{
     prompt.classList.remove('show');
     actionBtn.classList.remove('show');
