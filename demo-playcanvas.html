@@ -91,16 +91,16 @@ app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.start();
 
 const scene=app.scene;
-scene.ambientLight=new pc.Color(0.35,0.35,0.4);
-scene.fogColor=new pc.Color(0.55,0.62,0.72);
-scene.fogStart=30;scene.fogEnd=90;
+scene.ambientLight=new pc.Color(0.4,0.4,0.45);
+scene.fogColor=new pc.Color(0.6,0.68,0.78);
+scene.fogStart=40;scene.fogEnd=120;
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:60,near:0.1,far:200,clearColor:new pc.Color(0.55,0.62,0.72)});
+camera.addComponent('camera',{fov:60,near:0.1,far:300,clearColor:new pc.Color(0.6,0.68,0.78)});
 app.root.addChild(camera);
 
 const light=new pc.Entity('light');
-light.addComponent('light',{type:'directional',color:new pc.Color(1,0.95,0.8),intensity:1.1,castShadows:false});
+light.addComponent('light',{type:'directional',color:new pc.Color(1,0.95,0.8),intensity:1.2,castShadows:false});
 light.setEulerAngles(45,30,0);
 app.root.addChild(light);
 
@@ -111,33 +111,125 @@ function mat(color,emissive){
   m.update();return m;
 }
 const grassMat=mat([0.42,0.62,0.35]);
-const dirtMat=mat([0.45,0.32,0.2]);
-const mats={
-  gold:mat([0.85,0.65,0.25],[0.5,0.35,0.1]),
-  blue:mat([0.4,0.7,0.8],[0.1,0.35,0.45]),
-  purple:mat([0.6,0.45,0.85],[0.25,0.15,0.45]),
-  green:mat([0.45,0.7,0.4],[0.15,0.35,0.1]),
-  red:mat([0.75,0.3,0.25],[0.35,0.1,0.05])
-};
+const fieldMat=mat([0.6,0.65,0.3]);
+const pathMat=mat([0.5,0.38,0.24]);
+const rockMat=mat([0.5,0.5,0.52]);
+const snowMat=mat([0.95,0.95,0.98]);
+const mountainMat=mat([0.45,0.4,0.38]);
+const waterMat=mat([0.3,0.55,0.7]);
+const trunkMat=mat([0.4,0.28,0.18]);
+const leafMat=mat([0.3,0.55,0.3]);
+const bushMat=mat([0.35,0.6,0.35]);
+const goldMat=mat([0.85,0.65,0.25],[0.5,0.35,0.1]);
+const blueMat=mat([0.4,0.7,0.8],[0.1,0.35,0.45]);
+const purpleMat=mat([0.6,0.45,0.85],[0.25,0.15,0.45]);
+const greenMat=mat([0.45,0.7,0.4],[0.15,0.35,0.1]);
+const redMat=mat([0.75,0.3,0.25],[0.35,0.1,0.05]);
 
 const world=new pc.Entity('world');
 app.root.addChild(world);
-const SIZE=14;
-for(let x=-SIZE/2;x<SIZE/2;x++){
-  for(let z=-SIZE/2;z<SIZE/2;z++){
-    const e=new pc.Entity();
-    e.addComponent('render',{type:'box',material:grassMat});
-    e.setLocalPosition(x,0,z);
-    world.addChild(e);
-  }
+
+// Большая земля
+const ground=new pc.Entity('ground');
+ground.addComponent('render',{type:'plane',material:grassMat});
+ground.setLocalPosition(0,0,0);
+ground.setLocalScale(60,1,60);
+ground.setEulerAngles(-90,0,0);
+world.addChild(ground);
+
+// Поля (желто-зеленые участки)
+const fields=[[-10,-8,6,4],[8,-10,5,5],[-12,6,5,4],[10,8,6,4],[0,-14,8,4]];
+fields.forEach(f=>{
+  const e=new pc.Entity('field');
+  e.addComponent('render',{type:'plane',material:fieldMat});
+  e.setLocalPosition(f[0],0.02,f[1]);
+  e.setLocalScale(f[2],1,f[3]);
+  e.setEulerAngles(-90,0,0);
+  world.addChild(e);
+});
+
+// Тропинка
+const path=new pc.Entity('path');
+path.addComponent('render',{type:'plane',material:pathMat});
+path.setLocalPosition(0,0.03,0);
+path.setLocalScale(3,1,40);
+path.setEulerAngles(-90,0,0);
+world.addChild(path);
+
+// Озеро
+const lake=new pc.Entity('lake');
+lake.addComponent('render',{type:'plane',material:waterMat});
+lake.setLocalPosition(-14,0.04,10);
+lake.setLocalScale(10,1,8);
+lake.setEulerAngles(-90,0,0);
+world.addChild(lake);
+
+// Горы по краям
+const mountains=[[-22,-18,6,10],[22,-18,7,12],[-24,14,6,9],[24,14,7,11],[0,-24,8,14],[0,24,8,13]];
+mountains.forEach(m=>{
+  const base=new pc.Entity('mountain');
+  base.addComponent('render',{type:'cone',material:mountainMat});
+  base.setLocalPosition(m[0],m[3]/2,m[1]);
+  base.setLocalScale(m[2],m[3],m[2]);
+  world.addChild(base);
+  const cap=new pc.Entity('cap');
+  cap.addComponent('render',{type:'cone',material:snowMat});
+  cap.setLocalPosition(m[0],m[3]*0.8,m[1]);
+  cap.setLocalScale(m[2]*0.4,m[3]*0.3,m[2]*0.4);
+  world.addChild(cap);
+});
+
+// Деревья (за пределами центральной зоны)
+function tree(x,z,scale){
+  const g=new pc.Entity('tree');
+  const trunk=new pc.Entity();trunk.addComponent('render',{type:'cylinder',material:trunkMat});trunk.setLocalPosition(0,1,0);trunk.setLocalScale(0.3,2,0.3);g.addChild(trunk);
+  const c1=new pc.Entity();c1.addComponent('render',{type:'sphere',material:leafMat});c1.setLocalPosition(0,2.4,0);c1.setLocalScale(1.6,1.8,1.6);g.addChild(c1);
+  const c2=new pc.Entity();c2.addComponent('render',{type:'sphere',material:leafMat});c2.setLocalPosition(0.7,2.9,0.2);c2.setLocalScale(1.1,1.2,1.1);g.addChild(c2);
+  const c3=new pc.Entity();c3.addComponent('render',{type:'sphere',material:leafMat});c3.setLocalPosition(-0.6,2.8,-0.2);c3.setLocalScale(1,1.1,1);g.addChild(c3);
+  g.setLocalPosition(x,0,z);g.setLocalScale(scale,scale,scale);
+  world.addChild(g);
+}
+for(let i=0;i<28;i++){
+  const a=Math.random()*Math.PI*2;
+  const r=9+Math.random()*8;
+  const x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  tree(x,z,0.8+Math.random()*0.6);
 }
 
-// Факелы с освещением
+// Кусты
+for(let i=0;i<18;i++){
+  const a=Math.random()*Math.PI*2;
+  const r=7+Math.random()*10;
+  const x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  const b=new pc.Entity('bush');
+  b.addComponent('render',{type:'sphere',material:bushMat});
+  b.setLocalPosition(x,0.4,z);
+  b.setLocalScale(0.8,0.6,0.8);
+  world.addChild(b);
+}
+
+// Камни
+for(let i=0;i<14;i++){
+  const a=Math.random()*Math.PI*2;
+  const r=6+Math.random()*12;
+  const x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<7&&Math.abs(z)<7)continue;
+  const rock=new pc.Entity('rock');
+  rock.addComponent('render',{type:'box',material:rockMat});
+  rock.setLocalPosition(x,0.3,z);
+  rock.setLocalScale(0.6+Math.random()*0.6,0.4+Math.random()*0.4,0.6+Math.random()*0.6);
+  rock.setEulerAngles(0,Math.random()*360,0);
+  world.addChild(rock);
+}
+
+// Факелы
 const torchPositions=[[-5,-5],[5,-5],[-5,5],[5,5]];
 const torchCount=window.matchMedia('(max-width:760px)').matches?2:4;
 torchPositions.slice(0,torchCount).forEach(p=>{
   const g=new pc.Entity('torch');
-  const post=new pc.Entity();post.addComponent('render',{type:'cylinder',material:mat([0.3,0.2,0.12])});post.setLocalPosition(0,1,0);post.setLocalScale(0.1,2,0.1);g.addChild(post);
+  const post=new pc.Entity();post.addComponent('render',{type:'cylinder',material:trunkMat});post.setLocalPosition(0,1,0);post.setLocalScale(0.1,2,0.1);g.addChild(post);
   const lamp=new pc.Entity();lamp.addComponent('render',{type:'sphere',material:mat([1,0.9,0.6],[1,0.8,0.4])});lamp.setLocalPosition(0,2.2,0);lamp.setLocalScale(0.35,0.35,0.35);g.addChild(lamp);
   const pl=new pc.Entity();pl.addComponent('light',{type:'point',color:new pc.Color(1,0.8,0.5),intensity:1.5,range:10});pl.setLocalPosition(0,2.2,0);g.addChild(pl);
   g.setLocalPosition(p[0],0,p[1]);world.addChild(g);
@@ -145,11 +237,11 @@ torchPositions.slice(0,torchCount).forEach(p=>{
 
 // Типы блоков
 const types=[
-  {key:'gold',label:'золото',mat:mats.gold},
-  {key:'blue',label:'кристалл',mat:mats.blue},
-  {key:'purple',label:'руна',mat:mats.purple},
-  {key:'green',label:'семя',mat:mats.green},
-  {key:'red',label:'опасный блок',mat:mats.red}
+  {key:'gold',label:'золото',mat:goldMat},
+  {key:'blue',label:'кристалл',mat:blueMat},
+  {key:'purple',label:'руна',mat:purpleMat},
+  {key:'green',label:'семя',mat:greenMat},
+  {key:'red',label:'опасный блок',mat:redMat}
 ];
 const questTypes=['gold','blue','purple','green'];
 
@@ -158,7 +250,7 @@ let hearts=3,maxHearts=5,food=0,score=0,gameOver=false;
 const ores=[];
 
 function randPos(){
-  return [(Math.random()-0.5)*(SIZE-2),1,(Math.random()-0.5)*(SIZE-2)];
+  return [(Math.random()-0.5)*12,1,(Math.random()-0.5)*12];
 }
 function spawnOre(typeKey){
   const t=types.find(t=>t.key===typeKey);
@@ -213,8 +305,8 @@ function flash(){
   el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);
 }
 
-// Камера: орбита
-let yaw=0,pitch=0.5,dist=16;
+// Камера
+let yaw=0,pitch=0.5,dist=18;
 const target=new pc.Vec3(0,1,0);
 function updateCamera(){
   const x=target.x+dist*Math.sin(yaw)*Math.cos(pitch);
@@ -263,7 +355,6 @@ function mineAt(cx,cy){
   if(!best){toast('Мимо. Ищите светящиеся блоки.');return;}
   const type=best.userData.type;
   best.userData.alive=false;
-  // Анимация исчезновения
   let s=1;const shrink=()=>{s-=0.15;if(s<=0){world.removeChild(best);return;}best.setLocalScale(s,s,s);requestAnimationFrame(shrink);};shrink();
   if(type===questType){
     food++;score++;toast('Верно! Получена еда.');
@@ -283,7 +374,6 @@ function mineAt(cx,cy){
   }
 }
 
-// Хотбар: еда лечит
 document.getElementById('foodSlot').addEventListener('click',()=>{
   if(gameOver)return;
   if(food>0&&hearts<maxHearts){food--;hearts++;toast('Вы отхилились на 1 сердце.');}
@@ -292,11 +382,9 @@ document.getElementById('foodSlot').addEventListener('click',()=>{
   updateHUD();
 });
 
-// Перезапуск
 document.getElementById('restart').addEventListener('click',()=>{
   hearts=3;food=0;score=0;gameOver=false;
   document.getElementById('gameover').classList.remove('show');
-  // Удалить все блоки и заспавнить заново
   ores.forEach(o=>{if(o.userData.alive)world.removeChild(o);});
   ores.length=0;
   spawnInitial();setQuest();updateHUD();
