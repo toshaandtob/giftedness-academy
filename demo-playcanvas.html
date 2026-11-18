@@ -160,7 +160,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="box">
     <h2>Как играть</h2>
     <p><b>WASD / стрелки</b> — движение. <b>Мышь</b> — камера от 1 лица (как в Minecraft). <b>ЛКМ</b> — добыть блок. <b>ПКМ</b> — поставить выбранный блок. <b>Пробел / ⤒</b> — прыжок.</p>
-    <p>В шахту можно спуститься по каменной лестнице из блоков — просто идите вниз по ступеням. Шахта большая, с рудой и факелами.</p>
+    <p>В шахту можно спуститься по каменной лестнице из блоков. Шахта большая, с рудой и факелами. Теперь с тенями и красивым освещением.</p>
     <button id="startGame">Начать игру</button>
   </div>
 </div>
@@ -234,18 +234,37 @@ app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.start();
 
 const scene=app.scene;
-scene.ambientLight=new pc.Color(0.5,0.5,0.55);
-scene.fogColor=new pc.Color(0.5,0.7,1.0);
+scene.ambientLight=new pc.Color(0.45,0.5,0.6);
+scene.fogColor=new pc.Color(0.55,0.72,1.0);
 scene.fogStart=40;scene.fogEnd=220;
+if(pc.TONEMAP_ACES!==undefined){
+  scene.toneMapping=pc.TONEMAP_ACES;
+  scene.exposure=1.15;
+}
 
 const camera=new pc.Entity('camera');
-camera.addComponent('camera',{fov:70,near:0.1,far:800,clearColor:new pc.Color(0.5,0.7,1.0)});
+camera.addComponent('camera',{fov:70,near:0.1,far:800,clearColor:new pc.Color(0.55,0.72,1.0)});
 app.root.addChild(camera);
 
+// Основной свет с тенями
 const light=new pc.Entity('light');
-light.addComponent('light',{type:'directional',color:new pc.Color(1,1,0.9),intensity:1.3,castShadows:false});
-light.setEulerAngles(35,40,0);
+light.addComponent('light',{
+  type:'directional',
+  color:new pc.Color(1,0.95,0.85),
+  intensity:1.6,
+  castShadows:true,
+  shadowDistance:120,
+  shadowResolution:2048,
+  shadowBias:0.05
+});
+light.setEulerAngles(45,35,0);
 app.root.addChild(light);
+
+// Заполняющий свет (мягкий, без теней)
+const fill=new pc.Entity('fill');
+fill.addComponent('light',{type:'directional',color:new pc.Color(0.4,0.5,0.7),intensity:0.4,castShadows:false});
+fill.setEulerAngles(-30,-140,0);
+app.root.addChild(fill);
 
 function mat(color,emissive){
   const m=new pc.StandardMaterial();
@@ -389,8 +408,7 @@ function bridgeTop(x,z){
   }
   return null;
 }
-// Шахта: большая комната 13x13, вход — лестница из блоков
-const MINE_HALF=6; // 13x13
+const MINE_HALF=6;
 function mineCenter(l){return {x:l.minePos.x+3,z:l.minePos.z};}
 function mineTop(x,z){
   for(const l of LOCS){
@@ -410,7 +428,6 @@ function mineWall(x,z){
   }
   return null;
 }
-// Лестница из блоков: 2 колонки, 8 ступеней вниз
 const stairMap=new Map();
 LOCS.forEach(l=>{
   const mp=l.minePos;
@@ -456,7 +473,6 @@ LOCS.forEach((l,i)=>{
   }
 });
 
-// Генерация земли с учётом лестницы в шахту
 for(let x=-50;x<50;x++){
   for(let z=-50;z<50;z++){
     const l=locAt(x,z);
@@ -588,7 +604,6 @@ LOCS.forEach(l=>{
   }
 });
 
-// Большая шахта: пол, стены, руда, факелы
 LOCS.forEach((l,i)=>{
   const c=mineCenter(l);
   for(let dx=-MINE_HALF;dx<=MINE_HALF;dx++)for(let dz=-MINE_HALF;dz<=MINE_HALF;dz++){
@@ -598,7 +613,6 @@ LOCS.forEach((l,i)=>{
       cube(c.x+dx,MINE_Y+2,c.z+dz,darkStone);
     }
   }
-  // Факелы в шахте
   for(let k=0;k<4;k++){
     const a=k*Math.PI/2+Math.PI/4;
     const tx=c.x+Math.round(Math.cos(a)*(MINE_HALF-2));
@@ -907,6 +921,13 @@ const phat=new pc.Entity();phat.addComponent('render',{type:'box',material:mat([
 const startLoc=LOCS[0];
 player.setLocalPosition(startLoc.cx,groundTop(startLoc.cx,startLoc.cz)+0.5,startLoc.cz);
 world.addChild(player);
+
+// Включить тени на всех объектах
+function enableShadows(e){
+  if(e.render){e.render.castShadows=true;e.render.receiveShadows=true;}
+  e.children.forEach(enableShadows);
+}
+enableShadows(world);
 
 let yaw=0,pitch=0;
 function updateCamera(){
